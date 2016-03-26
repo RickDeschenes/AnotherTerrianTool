@@ -20,11 +20,12 @@ namespace AnotherTerrain
         }
     }
 
-
     public class LoadingExtension : LoadingExtensionBase
     {
         public AnotherTerrainTool buildTool;
         public UITextureAtlas terraform_atlas;
+
+        public static ICities.LoadMode mode;
 
         public void LoadResources()
         {
@@ -116,6 +117,7 @@ namespace AnotherTerrain
             ImageConverter converter = new ImageConverter();
             return (byte[])converter.ConvertTo(img, typeof(byte[]));
         }
+
         public override void OnLevelLoaded(LoadMode mode)
         {
             if (mode == LoadMode.LoadAsset || mode == LoadMode.NewAsset || mode == LoadMode.NewMap || mode == LoadMode.LoadMap)
@@ -129,7 +131,7 @@ namespace AnotherTerrain
                         GameObject gameController = GameObject.FindWithTag("GameController");
                         buildTool = gameController.AddComponent<AnotherTerrainTool>();
                         buildTool.m_atlas = terraform_atlas;
-                        buildTool.CreateButtons();
+                        buildTool.InitGui(mode);
                         buildTool.enabled = false;
                     }
                 }
@@ -140,13 +142,13 @@ namespace AnotherTerrain
             }
         }
 
-        public static void WriteLog(string logMessage)
+        public static void WriteLog(string log)
         {
             using (StreamWriter w = File.AppendText("AnotherTerrainTool.Log"))
             {
-                w.WriteLine(logMessage);
+                w.WriteLine(log);
+                DebugOutputPanel.AddMessage(ColossalFramework.Plugins.PluginManager.MessageType.Message, log);
             }
         }
     }
-
 }
