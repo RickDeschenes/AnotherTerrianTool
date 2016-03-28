@@ -43,6 +43,7 @@
     <Reference Include="System" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.XML" />
     <Reference Include="UnityEngine">
       <HintPath>C:\Program Files (x86)\Steam\steamapps\common\Cities_Skylines\Cities_Data\Managed\UnityEngine.dll</HintPath>
     </Reference>
@@ -56,8 +57,9 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
+    <Compile Include="Services\Ellipses.cs" />
     <Compile Include="Services\SettingsPanel.cs" />
-    <Compile Include="Services\TextBox.cs" />
+    <Compile Include="Services\UserPreferences.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="spritesheet.png">

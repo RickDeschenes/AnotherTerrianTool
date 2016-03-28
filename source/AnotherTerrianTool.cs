@@ -76,6 +76,8 @@ namespace AnotherTerrain
         readonly ushort[] m_rawHeights = Singleton<TerrainManager>.instance.RawHeights;
 
         private int m_maxArea = 8000;
+        private string log;
+
         //private int m_maxheight = 800;
         //private int m_maxWith = 800;
 
@@ -156,7 +158,7 @@ namespace AnotherTerrain
         /// <param name="mode"></param>
         public void InitGui(LoadMode mode)
         {
-            //string log = "";
+            //log = "";
             //Make the button
             UIComponent tsBar = UIView.GetAView().FindUIComponent("TSBar");
 
@@ -188,6 +190,8 @@ namespace AnotherTerrain
         private void SettingsPanel_MoveCompleted(float x, float y)
         {
             //we want to store the panels possition;
+            log = "fired Settings Panel MoveCompleted: " + x + ", " + y;
+            LoadingExtension.WriteLog(log);
         }
         #endregion
 
@@ -220,8 +224,7 @@ namespace AnotherTerrain
 
         private void ToggleTerraform(UIComponent component, UIMouseEventParameter eventParam)
         {
-            string log = "Left ToggleTerraform as Mode: ";
-
+            log = "Left ToggleTerraform as Mode: ";
 
             //Set our status
             if (enabled == true)
@@ -465,7 +468,7 @@ namespace AnotherTerrain
             float max = 1080;
 
             string coords = startx + " X " + endx + " : " + startz + " X " + endz;
-            string log = "ApplyBrush: startMouse.x X endMouse.x : startMouse.z X endMouse.z = " + coords;
+            log = "ApplyBrush: startMouse.x X endMouse.x : startMouse.z X endMouse.z = " + coords;
             LoadingExtension.WriteLog(log);
 
             //Get the smaller X into startx and larger into endx
@@ -520,7 +523,7 @@ namespace AnotherTerrain
                     }
                 }
                 TerrainModify.UpdateArea(minX - 1, minZ - 1, maxX + 1, maxZ + 1, true, true, false);
-                string log = "Exiting ApplyBrush";
+                log = "Exiting ApplyBrush";
                 LoadingExtension.WriteLog(log);
             }
         }

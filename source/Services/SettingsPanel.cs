@@ -1,216 +1,159 @@
 ﻿using System;
+using System.IO;
+using System.Text.RegularExpressions;
+using System.Xml.Serialization;
 using ColossalFramework.UI;
 using UnityEngine;
-using System.Text.RegularExpressions;
 using AnotherTerrain.Services;
 
 namespace AnotherTerrain.Services
 {
     public delegate void SettingsPanelEventHandler(float x, float y);
 
+    /// <summary>
+    /// I am the paint brush types
+    /// </summary>
+    public enum Patterns
+    {
+        Square = 0,
+        Ellipses,
+        Triangle,
+        Star,
+        Empty
+    }
+
+    public enum ValueType
+    {
+        Textual,
+        Real,
+        Whole
+    }
+
     public class SettingsPanel : UIPanel
     {
-        public enum Patterns
-        {
-            Square,
-            Ellipses,
-            Triangle,
-            Star,
-            Empty
-        }
-
         Vector2 m_Resolution = new Vector2(Screen.currentResolution.height, Screen.currentResolution.width);
         public Vector2 Resolution
         {
             get {  return new Vector2(Screen.currentResolution.height, Screen.currentResolution.width); }
         }
 
-        Patterns m_Patterns;
-        private int m_TerrainPattern = 0;
-        public int TerrainPattern
-        {
-            get { return m_TerrainPattern; }
-            set
-            {
-                m_TerrainPattern = value;
-                if (value < 0)
-                    m_TerrainPattern = 0;
-                if (value > 4)
-                    m_TerrainPattern = 4;
-
-                switch (m_TerrainPattern)
-                    {
-                    case 0:
-                        m_Patterns = Patterns.Square;
-                        break;
-                    case 1:
-                        m_Patterns = Patterns.Ellipses;
-                        break;
-                    case 2:
-                        m_Patterns = Patterns.Triangle;
-                        break;
-                    case 3:
-                        m_Patterns = Patterns.Star;
-                        break;
-                    case 4:
-                        m_Patterns = Patterns.Empty;
-                        break;
-                    case 5:
-                        m_Patterns = Patterns.Empty;
-                        break;
-                    case 6:
-                        m_Patterns = Patterns.Empty;
-                        break;
-                    case 7:
-                        m_Patterns = Patterns.Empty;
-                        break;
-                    default:
-                        m_Patterns = Patterns.Empty;
-                        break;
-                }
-            }
-        }
-
         UILabel titleLabel;
+        UILabel lbInformationLabel;
         UILabel lbTerrainLabel;
-        UITextBox tfTerrainHeight;
+        UITextField tfTerrainHeight;
         UILabel lbTerrainHeight;
-        UITextBox tfTerrainPattern;
+        UICheckboxDropDown cbTerrainPattern;
         UILabel lbTerrainPattern;
-        UITextBox tfMaxArea;
+        UITextField tfMaxArea;
         UILabel lbMaxArea;
-        UITextBox tfMaxHeight;
+        UITextField tfMaxHeight;
         UILabel lbMaxHeight;
-        UITextBox tfMaxWidth;
+        UITextField tfMaxWidth;
         UILabel lbMaxWidth;
         UILabel lbSettingsLabel;
         UILabel lbSettingsTop;
-        UITextBox tfSettingsTop;
+        UITextField tfSettingsTop;
         UILabel lbSettingsLeft;
-        UITextBox tfSettingsLeft;
+        UITextField tfSettingsLeft;
         UILabel lbSettingsHeight;
-        UITextBox tfSettingsHeight;
+        UITextField tfSettingsHeight;
         UILabel lbSettingsWidth;
-        UITextBox tfSettingsWidth;
+        UITextField tfSettingsWidth;
         UIButton btUndoButton;
         UILabel lbUndoButton;
 
         private bool mouseDown;
         private string log;
-
-        private double m_TerrainHeight = 80;
-        public double TerrainHeight
-        {
-            get { return m_TerrainHeight; }
-            set
-            {
-                m_TerrainHeight = value;
-                if (value < 0.01)
-                    m_TerrainHeight = 0.01;
-                if (value > 2000)
-                    m_TerrainHeight = 2000;
-            }
-        }
-
-        private int m_MaxArea = 8000;
-        public int MaxArea
-        {
-            get { return m_MaxArea; }
-            set
-            {
-                m_MaxArea = value;
-                if (value < 400)
-                    m_MaxArea = 400;
-                if (value > 9999)
-                    m_MaxArea = 9999;
-            }
-        }
-
-        private int m_MaxHeight = 800;
-        public int MaxHeight
-        {
-            get { return m_MaxHeight; }
-            set
-            {
-                m_MaxHeight = value;
-                if (value < 400)
-                    m_MaxHeight = 400;
-                if (value > 1080)
-                    m_MaxHeight = 9999;
-            }
-        }
-        private int m_MaxWidth = 800;
-        public int MaxWidth
-        {
-            get { return m_MaxWidth; }
-            set
-            {
-                m_MaxWidth = value;
-                if (value < 400)
-                    m_MaxWidth = 400;
-                if (value > 1080)
-                    m_MaxWidth = 9999;
-            }
-        }
-
-        private int m_SettingsTop = 1;
-        public int SettingsTop
-        {
-            get { return m_SettingsTop; }
-            set
-            {
-                m_SettingsTop = value;
-                if (value < 1)
-                    m_SettingsTop = 1;
-                if (value > 1080)
-                    m_SettingsTop = 1080;
-            }
-        }
-
-        private int m_SettingsLeft = 1;
-        public int SettingsLeft
-        {
-            get { return m_SettingsLeft; }
-            set
-            {
-                m_SettingsLeft = value;
-                if (value < 1)
-                    m_SettingsLeft = 1;
-                if (value > 1620)
-                    m_SettingsLeft = 1620;
-            }
-        }
-
-        private int m_SettingsHeight = 350;
-        public int SettingsHeight
-        {
-            get { return m_SettingsHeight; }
-            set
-            {
-                m_SettingsHeight = value;
-                if (value < 350)
-                    m_SettingsHeight = 350;
-                if (value > 1080)
-                    m_SettingsHeight = 1080;
-            }
-        }
-        
-        private int m_SettingsWidth = 250;
         private float bottomToolbar = 120;
 
-        public int SettingsWidth
-        {
-            get { return m_SettingsWidth; }
-            set
-            {
-                m_SettingsWidth = value;
-                if (value < 250)
-                    m_SettingsWidth = 250;
-                if (value > 1080)
-                    m_SettingsWidth = 1080;
-            }
-        }
+        UserPreferences up = new UserPreferences();
+        
+        //private Patterns m_TerrainPattern = Patterns.Empty;
+        //public Patterns TerrainPattern
+        //{
+        //    get { return m_TerrainPattern; }
+        //    set { m_TerrainPattern = value; }
+        //}
 
+        //private double m_TerrainHeight = 50;
+        ///// <summary>
+        ///// Min and Max set in UITextField
+        ///// </summary>
+        //public double TerrainHeight
+        //{
+        //    get { return m_TerrainHeight; }
+        //    set { m_TerrainHeight = value; }
+        //}
+
+        //private int m_MaxArea = 8000;
+        ///// <summary>
+        ///// Min and Max set in UITextField
+        ///// </summary>
+        //public int MaxArea
+        //{
+        //    get { return m_MaxArea; }
+        //    set { m_MaxArea = value; }
+        //}
+
+        //private int m_MaxHeight = 800;
+        ///// <summary>
+        ///// Min and Max set in UITextField
+        ///// </summary>
+        //public int MaxHeight
+        //{
+        //    get { return m_MaxHeight; }
+        //    set { m_MaxHeight = value; }
+        //}
+
+        //private int m_MaxWidth = 800;
+        ///// <summary>
+        ///// Min and Max set in UITextField
+        ///// </summary>
+        //public int MaxWidth
+        //{
+        //    get { return m_MaxWidth; }
+        //    set { m_MaxWidth = value; }
+        //}
+
+        //private int m_SettingsTop = 1;
+        ///// <summary>
+        ///// Min and Max set in UITextField
+        ///// </summary>
+        //public int SettingsTop
+        //{
+        //    get { return m_SettingsTop; }
+        //    set { m_SettingsTop = value; }
+        //}
+
+        //private int m_SettingsLeft = 1;
+        ///// <summary>
+        ///// Min and Max set in UITextField
+        ///// </summary>
+        //public int SettingsLeft
+        //{
+        //    get { return m_SettingsLeft; }
+        //    set { m_SettingsLeft = value; }
+        //}
+
+        //private int m_SettingsHeight = 350;
+        ///// <summary>
+        ///// Min and Max set in UITextField
+        ///// </summary>
+        //public int SettingsHeight
+        //{
+        //    get { return m_SettingsHeight; }
+        //    set { m_SettingsHeight = value; }
+        //}
+        
+        //private int m_SettingsWidth = 250;
+        ///// <summary>
+        ///// Min and Max set in UITextField
+        ///// </summary>
+        //public int SettingsWidth
+        //{
+        //    get { return m_SettingsWidth; }
+        //    set { m_SettingsWidth = value; }
+        //}
 
         public event SettingsPanelEventHandler MoveCompleted;
 
@@ -221,30 +164,37 @@ namespace AnotherTerrain.Services
 
             isInteractive = true;
             enabled = true;
-            width = m_SettingsWidth;
-            height = m_SettingsHeight;
+
+            if (up.SettingsWidth > 250)
+                up.SettingsWidth = 250;
+            if (up.SettingsHeight < 400)
+                up.SettingsHeight = 400;
+
+            width = up.SettingsWidth;
+            height = up.SettingsHeight;
 
             titleLabel = AddUIComponent<UILabel>();
+            lbInformationLabel = AddUIComponent<UILabel>();
             lbTerrainLabel = AddUIComponent<UILabel>();
             lbTerrainHeight = AddUIComponent<UILabel>();
-            tfTerrainHeight = AddUIComponent<UITextBox>();
-            tfTerrainPattern = AddUIComponent<UITextBox>();
+            tfTerrainHeight = AddUIComponent<UITextField>();
+            cbTerrainPattern = AddUIComponent<UICheckboxDropDown>();
             lbTerrainPattern = AddUIComponent<UILabel>();
-            tfMaxArea = AddUIComponent<UITextBox>();
+            tfMaxArea = AddUIComponent<UITextField>();
             lbMaxArea = AddUIComponent<UILabel>();
-            tfMaxHeight = AddUIComponent<UITextBox>();
+            tfMaxHeight = AddUIComponent<UITextField>();
             lbMaxHeight = AddUIComponent<UILabel>();
-            tfMaxWidth = AddUIComponent<UITextBox>();
+            tfMaxWidth = AddUIComponent<UITextField>();
             lbMaxWidth = AddUIComponent<UILabel>();
             lbSettingsLabel = AddUIComponent<UILabel>();
-            tfSettingsTop = AddUIComponent<UITextBox>();
+            tfSettingsTop = AddUIComponent<UITextField>();
             lbSettingsTop = AddUIComponent<UILabel>();
-            tfSettingsLeft = AddUIComponent<UITextBox>();
+            tfSettingsLeft = AddUIComponent<UITextField>();
             lbSettingsLeft = AddUIComponent<UILabel>();
             lbSettingsHeight = AddUIComponent<UILabel>();
-            tfSettingsHeight = AddUIComponent<UITextBox>();
+            tfSettingsHeight = AddUIComponent<UITextField>();
             lbSettingsWidth = AddUIComponent<UILabel>();
-            tfSettingsWidth = AddUIComponent<UITextBox>();
+            tfSettingsWidth = AddUIComponent<UITextField>();
             btUndoButton = AddUIComponent<UIButton>();
             lbUndoButton = AddUIComponent<UILabel>();
 
@@ -253,7 +203,6 @@ namespace AnotherTerrain.Services
             log = "leaving SettingsPanel Awake";
             LoadingExtension.WriteLog(log);
         }
-
         public override void Start()
         {
             base.Start();
@@ -272,25 +221,44 @@ namespace AnotherTerrain.Services
 
             SetControl("Another Terrain Tool Options");
 
-            width = m_SettingsWidth;
-            height = m_SettingsHeight;
+            if (up.SettingsWidth > 250)
+                up.SettingsWidth = 250;
+            if (up.SettingsHeight < 400)
+                up.SettingsHeight = 400;
 
-            log = string.Format("leaving SettingsPanel Start, m_SettingsWidth, m_SettingsHeight {0}, {1}",width.ToString(), height.ToString());
-            LoadingExtension.WriteLog(log);
+            width = up.SettingsWidth;
+            height = up.SettingsHeight;
+
+            //log = string.Format("leaving SettingsPanel Start, up.SettingsWidth, up.SettingsHeight {0}, {1}",width.ToString(), height.ToString());
+            //LoadingExtension.WriteLog(log);
         }
 
         public override void OnEnable()
         {
-            MaxArea = Properties.Settings.Default.MaxArea;
-            MaxHeight = Properties.Settings.Default.MaxHeight;
-            MaxWidth = Properties.Settings.Default.MaxWidth;
-            SettingsTop = Properties.Settings.Default.SettingsTop;
-            SettingsLeft = Properties.Settings.Default.SettingsLeft;
-            SettingsHeight = Properties.Settings.Default.SettingsHeight;
-            SettingsWidth = Properties.Settings.Default.SettingsWidth;
-            TerrainHeight = Properties.Settings.Default.TerrainHeight;
-            TerrainPattern = Properties.Settings.Default.TerrainPattern;
-            log = string.Format("eventMouseDown m_TerrainHeight, m_TerrainPattern, m_SettingsTop, m_SettingsLeft, m_SettingsWidth, m_SettingsHeight, m_MaxArea, m_MaxHeight, m_MaxWidth {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7} , {8}", m_TerrainHeight, m_TerrainPattern, m_SettingsTop, m_SettingsLeft, m_SettingsWidth, m_SettingsHeight, m_MaxArea, m_MaxHeight, m_MaxWidth);
+            XmlSerializer mySerializer = new XmlSerializer(typeof(UserPreferences));
+            FileStream myFileStream = new FileStream("c:/prefs.xml", FileMode.Open);
+
+            up = (UserPreferences)mySerializer.Deserialize(myFileStream);
+
+            //Make sure we have the minimum values
+            if (up.MaxArea < 400)
+                up.MaxArea = 400;
+            if (up.MaxHeight < 400)
+                up.MaxHeight = 400;
+            if (up.MaxWidth < 400)
+                up.MaxWidth = 400;
+            if (up.TerrainHeight < 50)
+                up.TerrainHeight = 50;
+            if (up.SettingsTop < 1)
+                up.SettingsTop = 1;
+            if (up.SettingsLeft < 1)
+                up.SettingsLeft = 1;
+            if (up.SettingsWidth < 250)
+                up.SettingsWidth = 250;
+            if (up.SettingsHeight < 400)
+                up.SettingsHeight = 400;
+
+            log = string.Format("eventMouseDown up.TerrainHeight, up.TerrainPattern, up.SettingsTop, up.SettingsLeft, up.SettingsWidth, up.SettingsHeight, up.MaxArea, up.MaxHeight, up.MaxWidth {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7} , {8}", up.TerrainHeight, up.TerrainPattern, up.SettingsTop, up.SettingsLeft, up.SettingsWidth, up.SettingsHeight, up.MaxArea, up.MaxHeight, up.MaxWidth);
             LoadingExtension.WriteLog(log);
 
             base.OnEnable();
@@ -298,16 +266,12 @@ namespace AnotherTerrain.Services
 
         public override void OnDisable()
         {
-            Properties.Settings.Default.MaxArea = m_MaxArea;
-            Properties.Settings.Default.MaxHeight = m_MaxHeight;
-            Properties.Settings.Default.MaxWidth = m_MaxWidth;
-            Properties.Settings.Default.SettingsTop = m_SettingsTop;
-            Properties.Settings.Default.SettingsLeft= m_SettingsLeft;
-            Properties.Settings.Default.SettingsHeight = m_SettingsHeight;
-            Properties.Settings.Default.SettingsWidth = m_SettingsWidth;
-            Properties.Settings.Default.TerrainHeight = m_TerrainHeight;
-            Properties.Settings.Default.TerrainPattern = m_TerrainPattern;
-            log = string.Format("OnDisable m_TerrainHeight, m_TerrainPattern, m_SettingsTop, m_SettingsLeft, m_SettingsWidth, m_SettingsHeight, m_MaxArea, m_MaxHeight, m_MaxWidth {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7} , {8}", m_TerrainHeight, m_TerrainPattern, m_SettingsTop, m_SettingsLeft, m_SettingsWidth, m_SettingsHeight, m_MaxArea, m_MaxHeight, m_MaxWidth);
+            XmlSerializer mySerializer = new XmlSerializer(typeof(UserPreferences));
+            StreamWriter myWriter = new StreamWriter("UserPreferences.xml");
+            mySerializer.Serialize(myWriter, up);
+            myWriter.Close();
+
+            log = string.Format("OnDisable up.TerrainHeight, up.TerrainPattern, up.SettingsTop, up.SettingsLeft, up.SettingsWidth, up.SettingsHeight, up.MaxArea, up.MaxHeight, up.MaxWidth {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7} , {8}", up.TerrainHeight, up.TerrainPattern, up.SettingsTop, up.SettingsLeft, up.SettingsWidth, up.SettingsHeight, up.MaxArea, up.MaxHeight, up.MaxWidth);
             LoadingExtension.WriteLog(log);
 
             base.OnDisable();
@@ -315,11 +279,18 @@ namespace AnotherTerrain.Services
 
         private void SettingsPanel_eventSizeChanged(UIComponent component, Vector2 value)
         {
-            if (width > m_SettingsWidth)
-                width = m_SettingsWidth;
-            if (height > m_SettingsHeight)
-                height = m_SettingsHeight;
+            //set minimum values
+            if (up.SettingsWidth < 250)
+                up.SettingsWidth = 250;
+            if (up.SettingsHeight < 400)
+                up.SettingsHeight = 400;
+            //set the values
+            if (width > up.SettingsWidth)
+                width = up.SettingsWidth;
+            if (height > up.SettingsHeight)
+                height = up.SettingsHeight;
             titleLabel.width = width;
+
             //log = "leaving SettingsPanel_eventSizeChanged";
             //LoadingExtension.WriteLog(log);
         }
@@ -387,10 +358,15 @@ namespace AnotherTerrain.Services
                 {
                     log = "Moving Panel from: " + rel + " to " + pos;
                     LoadingExtension.WriteLog(log);
-                    transform.position = pos;
-                    log = "Moved panel to: " + pos;
-                    LoadingExtension.WriteLog(log, false);
+                    relativePosition = pos;
                 }
+                this.tfSettingsHeight.text = Convert.ToInt32(height).ToString();
+                this.tfSettingsLeft.text = Convert.ToInt32(pos.x).ToString();
+                this.tfSettingsTop.text = Convert.ToInt32(pos.y).ToString();
+                this.tfSettingsWidth.text = Convert.ToInt32(width).ToString();
+
+                //log = "Moved panel to (x, y): " + relativePosition.x + ", " + relativePosition.y;
+                //LoadingExtension.WriteLog(log, false);
             }
             mouseDown = false;
         }
@@ -414,7 +390,6 @@ namespace AnotherTerrain.Services
                 titleLabel.textScale = 0.9f;
                 titleLabel.textAlignment = UIHorizontalAlignment.Center;
                 titleLabel.verticalAlignment = UIVerticalAlignment.Middle;
-                //titleLabel.size = size;
 
                 var vertPadding = 30;
                 var x = 15;
@@ -427,62 +402,66 @@ namespace AnotherTerrain.Services
                 SetLabel(lbTerrainLabel, "Terrain options", x, y);
                 y += vertPadding;
 
-                double val = Properties.Settings.Default.TerrainHeight;
+                double val = up.TerrainHeight;
 
                 SetLabel(lbTerrainHeight, "New Terrain Height", x, y);
-                SetTextBox(tfTerrainHeight, m_TerrainHeight.ToString(), x + l, y, w, h, "Use values between 2000 and 0.01", new Vector2(0.01f, 2000f), UITextBox.ValueType.Real);
+                SetTextBox(tfTerrainHeight, "TerrainHeight", up.TerrainHeight.ToString(), x + l, y, w, h, "Use values between 2000 and 0.01", new Vector2(50f, 2000f), ValueType.Real);
                 y += vertPadding;
 
-                //SetLabel(lbTerrainPattern, "New Terrain Pattern", x, y);
-                //SetTextBox(tfTerrainPattern, TerrainPattern.ToString, x + l, y, w, h, "Use values between 24 and 0", new Vector2(0f, 4f), UITextBox.ValueType.Real);
-                //tfTerrainPattern.tooltip = "Enter 0";
-                //y += vertPadding;
+                string[] vals = { "Square", "Ellipses", "Triangle", "Star", "Empty" };
 
-                int vl = Properties.Settings.Default.MaxArea;
+                SetLabel(lbTerrainPattern, "New Terrain Pattern", x, y);
+                SetCheckBoxDropDown(cbTerrainPattern, vals, x + l, y, w, h, "Use values between 24 and 0");
+                y += vertPadding;
+
+                int vl = up.MaxArea;
                 SetLabel(lbMaxArea, "Selectable Area", x, y);
-                SetTextBox(tfMaxArea, m_MaxArea.ToString(), x + l, y, w, h, "Use values between 400 and 9999", new Vector2(400f, 29999f), UITextBox.ValueType.Real);
+                SetTextBox(tfMaxArea, "MaxArea", up.MaxArea.ToString(), x + l, y, w, h, "Use values between 400 and 9999", new Vector2(400f, 9999f), ValueType.Whole);
                 y += vertPadding;
 
-                vl = Properties.Settings.Default.MaxHeight;
+                vl = up.MaxHeight;
                 SetLabel(lbMaxHeight, "Selectable Height", x, y);
-                SetTextBox(tfMaxHeight, m_MaxHeight.ToString(), x + l, y, w, h, "Use values between 2000 and 0.01", new Vector2(0.01f, 2000f), UITextBox.ValueType.Real);
+                SetTextBox(tfMaxHeight, "MaxHeight", up.MaxHeight.ToString(), x + l, y, w, h, "Use values between 2000 and 0.01", new Vector2(400f, 9999f), ValueType.Whole);
                 y += vertPadding;
 
-                vl = Properties.Settings.Default.MaxWidth;
+                vl = up.MaxWidth;
                 SetLabel(lbMaxWidth, "Selectable Width", x, y);
-                SetTextBox(tfMaxWidth, m_MaxWidth.ToString(), x + l, y, w, h, "Use values between 2000 and 0.01", new Vector2(0.01f, 2000f), UITextBox.ValueType.Real);
+                SetTextBox(tfMaxWidth, "MaxWidth", up.MaxWidth.ToString(), x + l, y, w, h, "Use values between 2000 and 0.01", new Vector2(400f, 9999f), ValueType.Whole);
                 y += vertPadding;
                                 
                 //Now set the location and size
                 SetLabel(lbSettingsLabel, "Screen position", x, y);
                 y += vertPadding;
 
-                vl = Properties.Settings.Default.SettingsTop;
+                vl = up.SettingsTop;
                 SetLabel(lbSettingsTop, "Top position", x, y);
-                SetTextBox(tfSettingsTop, m_SettingsTop.ToString(), x + l, y, w, h, "Use values between 1 and 1620", new Vector2(1f, 1620f), UITextBox.ValueType.Real);
+                SetTextBox(tfSettingsTop, "SettingsTop", up.SettingsTop.ToString(), x + l, y, w, h, "Use values between 1 and 1620", new Vector2(1f, 1620f), ValueType.Whole);
                 y += vertPadding;
 
-                vl = Properties.Settings.Default.SettingsLeft;
+                vl = up.SettingsLeft;
                 SetLabel(lbSettingsLeft, "Left position", x, y);
-                SetTextBox(tfSettingsLeft, m_SettingsLeft.ToString(), x + l, y, w, h, "Use values between 1 and 1080", new Vector2(1f, 1080f), UITextBox.ValueType.Real);
+                SetTextBox(tfSettingsLeft, "SettingsLeft", up.SettingsLeft.ToString(), x + l, y, w, h, "Use values between 1 and 1080", new Vector2(1f, 1080f), ValueType.Whole);
                 y += vertPadding;
 
-                vl = Properties.Settings.Default.SettingsHeight;
+                vl = up.SettingsHeight;
                 SetLabel(lbSettingsHeight, "Height size", x, y);
-                SetTextBox(tfSettingsHeight, m_SettingsHeight.ToString(), x + l, y, w, h, "Use values between 250 and 1080", new Vector2(1f, 1080f), UITextBox.ValueType.Real);
+                SetTextBox(tfSettingsHeight, "SettingsHeight", up.SettingsHeight.ToString(), x + l, y, w, h, "Use values between 250 and 1080", new Vector2(1f, 1080f), ValueType.Whole);
                 y += vertPadding;
 
-                vl = Properties.Settings.Default.SettingsWidth;
+                vl = up.SettingsWidth;
                 SetLabel(lbSettingsWidth, "Width position", x, y);
-                SetTextBox(tfSettingsWidth, m_SettingsWidth.ToString(), x + l, y, w, h, "Use values between 250 and 1620", new Vector2(1f, 1620f), UITextBox.ValueType.Real);
+                SetTextBox(tfSettingsWidth, "SettingsWidth", up.SettingsWidth.ToString(), x + l, y, w, h, "Use values between 250 and 1620", new Vector2(1f, 1620f), ValueType.Whole);
                 y += vertPadding;
 
                 SetLabel(lbUndoButton, "Undo changes", x, y);
                 SetButton(btUndoButton, "Undo", x + l, y, w, "Undo last update.");
                 btUndoButton.eventClick += undoMapButton_eventClick;
-                y += vertPadding + 5;
+                y += vertPadding;
+                
+                SetLabel(lbUndoButton, "Look here for information", x, y);
+                y += (vertPadding + 30);
 
-                SettingsHeight = y + 0;
+                up.SettingsHeight = y + 0;
             }
             catch (Exception e)
             {
@@ -491,6 +470,146 @@ namespace AnotherTerrain.Services
 
             //log = "leaving SettingsPanel SetControl " + MadeitHere;
             //LoadingExtension.WriteLog(log);
+        }
+
+        public void SetTextBox(UITextField tf, string name, string text, int top, int left, int width, int height, string tooltip, Vector2 minmax, ValueType valueType)
+        {
+            tf.relativePosition = new Vector3(top, left);
+            tf.size = new Vector3(100, 20);
+            tf.name = name;
+            tf.text = text;
+            tf.width = width;
+            tf.height = height;
+            tf.tooltip = tooltip;
+            tf.numericalOnly = (valueType != ValueType.Textual);
+            tf.textScale = 0.8f;
+            tf.color = Color.black;
+            tf.cursorBlinkTime = 0.45f;
+            tf.cursorWidth = 1;
+            tf.horizontalAlignment = UIHorizontalAlignment.Left;
+            tf.selectionBackgroundColor = new Color(233, 201, 148, 255);
+            tf.selectionSprite = "EmptySprite";
+            tf.verticalAlignment = UIVerticalAlignment.Middle;
+            tf.padding = new RectOffset(5, 0, 5, 0);
+            tf.foregroundSpriteMode = UIForegroundSpriteMode.Fill;
+            tf.normalBgSprite = "TextFieldPanel";
+            tf.hoveredBgSprite = "TextFieldPanelHovered";
+            tf.focusedBgSprite = "TextFieldPanel";
+            tf.isInteractive = true;
+            tf.enabled = true;
+            tf.readOnly = false;
+            tf.builtinKeyNavigation = true;
+            //used to validate a setting
+            //log = "(valueType != ValueType.Textual: " + (valueType != ValueType.Textual);
+            //LoadingExtension.WriteLog(log);
+        }
+
+        private void TextBox_eventTextChanged(UIComponent component, string value)
+        {
+            log = "Entering Settings Panel eventTextChanged";
+            LoadingExtension.WriteLog(log);
+
+            UITextField tf = (UITextField)component;
+            tf.text = Regex.Replace(tf.text, "[^0-9]", "");
+
+            if (tf.text.Length == 0)
+                return;
+            if (isNumeric(value) == false)
+                return;
+
+            int tmp;
+            log = "Settings Panel eventTextChanged - setting Textfield: " + tf.name;
+            LoadingExtension.WriteLog(log);
+            try
+            {
+                switch (tf.name)
+                {
+                    case "TerrainHeight":
+                        double dtmp = ReturnDouble(value, 50, 2000);
+                        up.TerrainHeight = dtmp;
+                        break;
+                    case "MaxArea":
+                        tmp = ReturnInteger(value, 400, 9999);
+                        up.MaxArea = tmp;
+                        break;
+                    case "MaxHeight":
+                        tmp = ReturnInteger(value, 400, 9999);
+                        up.MaxHeight = tmp;
+                        break;
+                    case "MaxWidth":
+                        tmp = ReturnInteger(value, 400, 9999);
+                        up.MaxWidth = tmp;
+                        break;
+                    case "SettingsTop":
+                        tmp = ReturnInteger(value, 1, 1060);
+                        up.SettingsTop = tmp;
+                        break;
+                    case "SettingsLeft":
+                        tmp = ReturnInteger(value, 1, 1920);
+                        up.SettingsLeft = tmp;
+                        break;
+                    case "SettingsHeight":
+                        tmp = ReturnInteger(value, 350, 1020);
+                        up.SettingsHeight = tmp;
+                        break;
+                    case "SettingsWidth":
+                        tmp = ReturnInteger(value, 250, 1920);
+                        up.SettingsWidth = tmp;
+                        break;
+                    default:
+                        break;
+                }
+            }
+            catch (Exception e)
+            {
+                LoadingExtension.WriteLog(e.Message);
+            }
+            log = "Leaving Settings Panel eventTextChanged - name: : " + tf.name + ", Value: " + tf.text;
+            LoadingExtension.WriteLog(log);
+        }
+
+        private int ReturnInteger(string value, double min, double max)
+        {
+            int tmp = Convert.ToInt32(min);
+            try
+            {
+                tmp = Convert.ToInt32(value);
+            }
+            catch (Exception)
+            {
+                tmp = 0;
+            }
+            return tmp;
+        }
+
+        private double ReturnDouble(string value, int min, int max)
+        {
+            double tmp = min;
+            try
+            {
+                tmp = Convert.ToDouble(value);
+            }
+            catch (Exception)
+            {
+                tmp = 0;
+            }
+            return tmp;
+        }
+
+        private bool isNumeric(string value)
+        {
+            bool results = false;
+            try
+            {
+                System.Convert.ToInt32(value);
+                results = true;
+            }
+            catch (FormatException e)
+            {
+                Debug.Log(e.Message);
+                throw;
+            }
+            return results;
         }
 
         private void undoMapButton_eventClick(UIComponent component, UIMouseEventParameter eventParam)
@@ -523,84 +642,20 @@ namespace AnotherTerrain.Services
             checkbox.enabled = true;
         }
 
-        private void SetTextBox(UITextBox scaleTextBox, string value, int top, int left, int width, int height, string tooltip, Vector2 minmax, UITextBox.ValueType numerical)
+        private void SetCheckBoxDropDown(UICheckboxDropDown checkBox, string[] values, int top, int left, int width, int height, string tooltip)
         {
-            scaleTextBox.SetTextBox(value, top, left, width, height, tooltip, minmax, numerical);
-            //scaleTextBox.relativePosition = new Vector3(x, y - 4);
-            //scaleTextBox.horizontalAlignment = UIHorizontalAlignment.Left;
-            //scaleTextBox.text = p;
-            //scaleTextBox.textScale = 0.8f;
-            //scaleTextBox.color = Color.black;
-            //scaleTextBox.cursorBlinkTime = 0.45f;
-            //scaleTextBox.cursorWidth = 1;
-            //scaleTextBox.width = w;
-            //scaleTextBox.tooltip = tt;
-            //scaleTextBox.selectionBackgroundColor = new Color(233, 201, 148, 255);
-            //scaleTextBox.selectionSprite = "EmptySprite";
-            //scaleTextBox.verticalAlignment = UIVerticalAlignment.Middle;
-            //scaleTextBox.padding = new RectOffset(5, 0, 5, 0);
-            //scaleTextBox.foregroundSpriteMode = UIForegroundSpriteMode.Fill;
-            //scaleTextBox.normalBgSprite = "TextFieldPanel";
-            //scaleTextBox.hoveredBgSprite = "TextFieldPanelHovered";
-            //scaleTextBox.focusedBgSprite = "TextFieldPanel";
-            //scaleTextBox.size = new Vector3(100, 20);
-            //scaleTextBox.isInteractive = true;
-            //scaleTextBox.enabled = true;
-            //scaleTextBox.readOnly = false;
-            //scaleTextBox.builtinKeyNavigation = true;
-            //scaleTextBox.eventTextChanged += ScaleTextBox_eventTextChanged;
-            //scaleTextBox.numericalOnly = num;
-            //scaleTextBox.minimumSize = mm;
+            checkBox.items = values;
+            checkBox.relativePosition = new Vector3(top, left);
+            checkBox.size = new Vector2(width, height);
+            checkBox.tooltip = tooltip;
+            checkBox.Show();
+            checkBox.enabled = true;
         }
 
-        //I was moved to textbox class
-        //private void ScaleTextBox_eventTextChanged(UIComponent component, string value)
+        //private void SetTextBox(UITextField tf, string name, string value, int top, int left, int width, int height, string tooltip, Vector2 minmax, UITextField.ValueType numerical)
         //{
-        //    UITextBox tf = (UITextBox)component;
-        //    tf.text = Regex.Replace(tf.text, "[^0-9]", "");
-
-        //    if (tf.text.Length == 0)
-        //        return;
-
-        //    double vl = Convert.ToDouble(tf.text);
-        //    if (vl > tf.minimumSize.x)
-        //        tf.text = tf.minimumSize.x.ToString();
-        //    if (vl > tf.minimumSize.y)
-        //        tf.text = tf.minimumSize.y.ToString();
-
-        //    int vli = Convert.ToInt32(vl);
-        //    switch (tf.name)
-        //    {
-        //        case "New Terrain Height":
-        //            TerrainHeight = vl;
-        //            break;
-        //        case "New Terrain Pattern":
-        //            TerrainPattern = vli;
-        //            break;
-        //        case "Selectable Area":
-        //            MaxArea = vli;
-        //            break;
-        //        case "Selectable Height":
-        //            MaxHeight = vli;
-        //            break;
-        //        case "Selectable Width":
-        //            MaxWidth = vli;
-        //            break;
-        //        case "Top position":
-        //            SettingsTop = vli;
-        //            break;
-        //        case "Left position":
-        //            SettingsLeft = vli;
-        //            break;
-        //        case "Height size":
-        //            SettingsHeight = vli;
-        //            break;
-        //        case "Width position":
-        //            SettingsWidth = vli;
-        //            break;
-        //        default:
-        //            break;
-        //    }
+        //    SetTextBox(tf, name, value, top, left, width, height, tooltip, minmax, numerical);
+        //    tf.eventTextChanged += TextBox_eventTextChanged;
         //}
 
         private void SetLabel(UILabel label, string p, int x, int y)
