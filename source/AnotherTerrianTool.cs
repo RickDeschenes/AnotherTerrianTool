@@ -75,10 +75,9 @@ namespace AnotherTerrain
         readonly ushort[] m_backupHeights = Singleton<TerrainManager>.instance.BackupHeights;
         readonly ushort[] m_rawHeights = Singleton<TerrainManager>.instance.RawHeights;
 
-        private float m_maxArea = 8000f;
-        //private float m_maxheight = 800f;
-        //private float m_maxWith = 800f;
-
+        private int m_maxArea = 8000;
+        //private int m_maxheight = 800;
+        //private int m_maxWith = 800;
 
         private static Vector3 SnapToTerrain(Vector3 mouse)
         {
@@ -177,8 +176,8 @@ namespace AnotherTerrain
                 this.settingsPanel.isVisible = true;
                 this.settingsPanel.canFocus = true;
                 this.settingsPanel.isInteractive = true;
-                this.settingsPanel.width = 250;
-                this.settingsPanel.height = 250;
+                //this.settingsPanel.width = 250;
+                //this.settingsPanel.height = 250;
                 this.settingsPanel.position = new Vector3(btSquare.position.x - 300, btSquare.position.y - 300); //new Vector3(Mathf.Floor((this.settingsPanel.GetUIView().fixedWidth - this.settingsPanel.width) / 2), Mathf.Floor((this.settingsPanel.GetUIView().fixedHeight - this.settingsPanel.height) / 2));
                 this.settingsPanel.MoveCompleted += SettingsPanel_MoveCompleted;
 

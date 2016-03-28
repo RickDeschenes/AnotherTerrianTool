@@ -144,10 +144,17 @@ namespace AnotherTerrain
 
         public static void WriteLog(string log)
         {
+            WriteLog(log, false);
+        }
+
+        internal static void WriteLog(string log, bool DebugOnly)
+        {
+            DebugOutputPanel.AddMessage(ColossalFramework.Plugins.PluginManager.MessageType.Message, log);
+            if (DebugOnly)
+                return;
             using (StreamWriter w = File.AppendText("AnotherTerrainTool.Log"))
             {
                 w.WriteLine(log);
-                DebugOutputPanel.AddMessage(ColossalFramework.Plugins.PluginManager.MessageType.Message, log);
             }
         }
     }
