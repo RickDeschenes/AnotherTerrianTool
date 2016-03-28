@@ -603,12 +603,12 @@ namespace AnotherTerrain.Services
         //    }
         //}
 
-        private void SetLabel(UILabel pedestrianLabel, string p, int x, int y)
+        private void SetLabel(UILabel label, string p, int x, int y)
         {
-            pedestrianLabel.relativePosition = new Vector3(x, y);
-            pedestrianLabel.text = p;
-            pedestrianLabel.textScale = 0.8f;
-            pedestrianLabel.size = new Vector3(120, 20);
+            label.relativePosition = new Vector3(x, y);
+            label.text = p;
+            label.textScale = 0.8f;
+            label.size = new Vector3(120, 20);
         }
     }
 }
