@@ -58,6 +58,7 @@
       <DependentUpon>Settings.settings</DependentUpon>
     </Compile>
     <Compile Include="Services\Ellipses.cs" />
+    <Compile Include="Services\MyITerrain.cs" />
     <Compile Include="Services\SettingsPanel.cs" />
     <Compile Include="Services\UserPreferences.cs" />
   </ItemGroup>

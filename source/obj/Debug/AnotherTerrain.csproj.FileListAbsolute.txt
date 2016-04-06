@@ -1,0 +1,14 @@
+C:\Users\Rick Deschenes\Source\Repos\AnotherTerrianTool\source\bin\Debug\spritesheet.png
+C:\Users\Rick Deschenes\Source\Repos\AnotherTerrianTool\source\bin\Debug\AnotherTerrain.dll.config
+C:\Users\Rick Deschenes\Source\Repos\AnotherTerrianTool\source\bin\Debug\AnotherTerrain.dll
+C:\Users\Rick Deschenes\Source\Repos\AnotherTerrianTool\source\bin\Debug\AnotherTerrain.pdb
+C:\Users\Rick Deschenes\Source\Repos\AnotherTerrianTool\source\bin\Debug\Assembly-CSharp.dll
+C:\Users\Rick Deschenes\Source\Repos\AnotherTerrianTool\source\bin\Debug\ColossalManaged.dll
+C:\Users\Rick Deschenes\Source\Repos\AnotherTerrianTool\source\bin\Debug\ICities.dll
+C:\Users\Rick Deschenes\Source\Repos\AnotherTerrianTool\source\bin\Debug\UnityEngine.dll
+C:\Users\Rick Deschenes\Source\Repos\AnotherTerrianTool\source\bin\Debug\Assembly-CSharp-firstpass.dll
+C:\Users\Rick Deschenes\Source\Repos\AnotherTerrianTool\source\bin\Debug\ICSharpCode.SharpZipLib.dll
+C:\Users\Rick Deschenes\Source\Repos\AnotherTerrianTool\source\bin\Debug\UnityEngine.xml
+C:\Users\Rick Deschenes\Source\Repos\AnotherTerrianTool\source\obj\Debug\AnotherTerrain.dll
+C:\Users\Rick Deschenes\Source\Repos\AnotherTerrianTool\source\obj\Debug\AnotherTerrain.pdb
+C:\Users\Rick Deschenes\Source\Repos\AnotherTerrianTool\source\obj\Debug\AnotherTerrain.csprojResolveAssemblyReference.cache

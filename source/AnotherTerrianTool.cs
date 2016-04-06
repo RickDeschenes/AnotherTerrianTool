@@ -1,19 +1,18 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.IO;
+using System.Threading;
 using ColossalFramework;
 using ColossalFramework.UI;
 using UnityEngine;
-using System.Threading;
 using ColossalFramework.Math;
 using ICities;
 using AnotherTerrain.Services;
+using System.Runtime.InteropServices;
 
 namespace AnotherTerrain
 {
     /// <summary>
-    /// Show a setting and undo panel and allow selected mouse drag area to be updates
+    /// Show a setting panel and allow selected mouse drag areas to be updated
     /// </summary>
     /// <Details>
     /// Allow the user to select an area
@@ -41,6 +40,7 @@ namespace AnotherTerrain
     /// </Details>
     public class AnotherTerrainTool : DefaultTool
     {
+
         #region "Public Declarations"
         public enum Modes
         {
@@ -58,10 +58,9 @@ namespace AnotherTerrain
         private Modes m_mode;
 
         private object m_dataLock = new object();
-
-        private GameObject buildingWindowGameObject;
+        
         private UIButton btSquare;
-        private SettingsPanel settingsPanel;
+        private SettingsPanel sp;
 
         private bool m_active;
 
@@ -72,10 +71,18 @@ namespace AnotherTerrain
         private Vector3 m_cameraDirection;
 
         readonly ushort[] m_undoBuffer = Singleton<TerrainManager>.instance.UndoBuffer;
+        readonly ushort[] m_originalHeights = Singleton<TerrainManager>.instance.BackupHeights;
         readonly ushort[] m_backupHeights = Singleton<TerrainManager>.instance.BackupHeights;
         readonly ushort[] m_rawHeights = Singleton<TerrainManager>.instance.RawHeights;
 
-        private int m_maxArea = 8000;
+        SavedInputKey m_UndoKey = new SavedInputKey(Settings.mapEditorTerrainUndo, Settings.inputSettingsFile, DefaultSettings.mapEditorTerrainUndo, true);
+
+        private int m_maxArea = 1168561;
+        private int m_minX = 0;
+        private int m_maxX = 0;
+        private int m_minZ = 0;
+        private int m_maxZ = 0;
+
         private string log;
 
         //private int m_maxheight = 800;
@@ -88,6 +95,10 @@ namespace AnotherTerrain
 
         private static float ConvertCoords(float coords, bool ScreenToTerrain = true)
         {
+            //float a = coords / 16f + 1080 / 2;
+            //float b = (coords - 1080 / 2) * 16f;
+            //string log = "float (a, b): (" + a + ", " + b + ")";
+            //LoadingExtension.WriteLog(log);
             return ScreenToTerrain ? coords / 16f + 1080 / 2 : (coords - 1080 / 2) * 16f;
         }
 
@@ -105,6 +116,13 @@ namespace AnotherTerrain
         protected override void Awake()
         {
             m_active = false;
+            //m_maxArea = m_rawHeights.Length;
+            //log = "Awake m_maxArea: " + m_maxArea;
+            //LoadingExtension.WriteLog(log);
+            //if (Singleton<LoadingManager>.exists)
+            //{
+            //    Singleton<LoadingManager>.instance.m_levelLoaded += OnLevelLoaded;
+            //}
             base.Awake();
         }
 
@@ -112,19 +130,41 @@ namespace AnotherTerrain
         {
             UIView.GetAView().FindUIComponent<UITabstrip>("MainToolstrip").selectedIndex = -1;
             DebugOutputPanel.Show();
-            this.settingsPanel.Show();
+            this.sp.Show();
+            //setting up our backup
+            m_minX = 0;
+            m_maxX = 0;
+            m_minZ = 0;
+            m_maxZ = 0;
+            for (int i = 0; i <= 1080; i++)
+            {
+                for (int j = 0; j <= 1080; j++)
+                {
+                    int num = i * 1081 + j;
+                    m_backupHeights[num] = m_rawHeights[num];
+                }
+            }
+            //m_maxArea = m_rawHeights.Length;
+            //log = "OnEnable m_maxArea: " + m_maxArea;
+            ////LoadingExtension.WriteLog(log);
             base.OnEnable();
         }
 
         protected override void OnDisable()
         {
             DebugOutputPanel.Hide();
-            this.settingsPanel.Hide();
+            this.sp.Hide();
             base.OnDisable();
         }
 
         protected override void OnToolGUI(Event e)
         {
+            Event current = Event.current;
+
+            if (!m_active && m_UndoKey.IsPressed(current) && IsUndoAvailable())
+            {
+                ApplyUndo();
+            }
             if (e.type == EventType.MouseDown && m_mouseRayValid)
             {
                 if (e.button == 0)
@@ -148,6 +188,7 @@ namespace AnotherTerrain
                 }
             }
         }
+
         #endregion
 
         #region "Public Procedures"
@@ -169,30 +210,44 @@ namespace AnotherTerrain
                 InitButton(btSquare, "Square", 1, "Square Tool");
 
                 //load our setting panel
-                buildingWindowGameObject = new GameObject("buildingWindowObject");
+                GameObject go = new GameObject("buildingWindowObject");
 
                 var view = UIView.GetAView();
 
-                this.settingsPanel = buildingWindowGameObject.AddComponent<SettingsPanel>();
-                this.settingsPanel.transform.parent = view.transform;
-                this.settingsPanel.isVisible = true;
-                this.settingsPanel.canFocus = true;
-                this.settingsPanel.isInteractive = true;
-                //this.settingsPanel.width = 250;
-                //this.settingsPanel.height = 250;
-                this.settingsPanel.position = new Vector3(btSquare.position.x - 300, btSquare.position.y - 300); //new Vector3(Mathf.Floor((this.settingsPanel.GetUIView().fixedWidth - this.settingsPanel.width) / 2), Mathf.Floor((this.settingsPanel.GetUIView().fixedHeight - this.settingsPanel.height) / 2));
-                this.settingsPanel.MoveCompleted += SettingsPanel_MoveCompleted;
+                this.sp = go.AddComponent<SettingsPanel>();
+                sp.UndoList = new List<UndoStroke>();
 
-                this.settingsPanel.Hide();
+                this.sp.transform.parent = view.transform;
+                this.sp.isVisible = true;
+                this.sp.canFocus = true;
+                this.sp.isInteractive = true;
+
+                this.sp.MoveCompleted += MoveCompleted;
+                //this.sp.ApplyUndo += ApplyUndo;
+
+                this.sp.Hide();
             }
         }
 
-        private void SettingsPanel_MoveCompleted(float x, float y)
+        private void MoveCompleted(float x, float y)
         {
             //we want to store the panels possition;
             log = "fired Settings Panel MoveCompleted: " + x + ", " + y;
             LoadingExtension.WriteLog(log);
         }
+
+        ///// <summary>
+        ///// Used to reset the buffer during the leveling ingame event
+        ///// </summary>
+        ///// <param name="mode"></param>
+        //public void OnLevelLoaded(SimulationManager.UpdateMode mode)
+        //{
+        //    log = "Entering OnLevelLoaded";
+        //    //LoadingExtension.WriteLog(log);
+        //    ResetUndoBuffer();
+        //    log = "Leaving OnLevelLoaded";
+        //    //LoadingExtension.WriteLog(log);
+        //}
         #endregion
 
         #region "Private Procedures"
@@ -224,27 +279,27 @@ namespace AnotherTerrain
 
         private void ToggleTerraform(UIComponent component, UIMouseEventParameter eventParam)
         {
-            log = "Left ToggleTerraform as Mode: ";
+            string log = "Left ToggleTerraform as Mode: ";
 
             //Set our status
             if (enabled == true)
             {
                 m_mode = Modes.Empty;
                 enabled = false;
-                this.settingsPanel.isVisible = true;
-                this.settingsPanel.BringToFront();
-                this.settingsPanel.Hide();
+                this.sp.isVisible = true;
+                this.sp.BringToFront();
+                this.sp.Hide();
                 log += "Disabled";
             }
             else
             {
                 m_mode = Modes.Square;
                 enabled = true;
-                this.settingsPanel.isVisible = false;
-                this.settingsPanel.Show();
+                this.sp.isVisible = false;
+                this.sp.Show();
                 log += "Enabled";
             }
-            LoadingExtension.WriteLog(log);
+            //LoadingExtension.WriteLog(log);
         }
 
         private void ToggleMode()
@@ -276,6 +331,227 @@ namespace AnotherTerrain
             label.width = 80;
             label.text = text;
             return label;
+        }
+        #endregion
+
+        #region "Apply Changes"
+        private void ApplyTerrainChange()
+        {
+            //Figure out where to send this
+            if (m_mode == Modes.Square)
+            {
+                //Finally make the call to update the entire area with the new height
+                ApplyBrush();
+            }
+        }
+
+        /// <summary>
+        /// Used to make sure we can have our select be any direction, backwards, forwards, up, or down
+        /// </summary>
+        /// <param name="minX"></param>
+        /// <param name="minZ"></param>
+        /// <param name="maxX"></param>
+        /// <param name="maxZ"></param>
+        private void GetMinMax(out int minX, out int minZ, out int maxX, out int maxZ)
+        {
+            //we need to store the mouse positions
+            //Vector3 startm = m_startPosition;
+            //Vector3 endm = m_endPosition;
+
+
+            //get the terrain coords
+            Vector3 startm = ConvertCoords(m_startPosition, true);
+            Vector3 endm = ConvertCoords(m_endPosition, true);
+
+            //Load the values
+            float startx = startm.x;
+            float startz = startm.z;
+            float endx = endm.x;
+            float endz = endm.z;
+
+            //we need the min and max coordinates
+            float min = 0;
+            float max = 1080;
+
+            //string coords = startx + " X " + endx + " : " + startz + " X " + endz;
+            //log = "enter GetMinMax: startMouse.x X endMouse.x : startMouse.z X endMouse.z = " + coords;
+            //LoadingExtension.WriteLog(log);
+
+            //Get the smaller X into startx and larger into endx
+            if (startx > endx)
+            {
+                minX = (int)Mathf.Max(endx, min);
+                maxX = (int)Mathf.Min(startx, max);
+            }
+            else
+            {
+                minX = (int)Mathf.Max(startx, min);
+                maxX = (int)Mathf.Min(endx, max);
+            }
+            //Get the smaller Z into startz and larger into endz
+            if (startz > endz)
+            {
+                minZ = (int)Mathf.Max(endz, min);
+                maxZ = (int)Mathf.Min(startz, max);
+            }
+            else
+            {
+                minZ = (int)Mathf.Max(startz, min);
+                maxZ = (int)Mathf.Min(endz, max);
+            }
+
+            //coords = minX + " X " + maxX + " : " + minZ + " X " + maxZ;
+            //log = "exit GetMinMax: minX X emaxX : minZ X maxZ = " + coords;
+            //LoadingExtension.WriteLog(log);
+        }
+
+        private void ApplyBrush()
+        {            
+            ushort finalHeight = 500;
+            MyITerrain mTerrain = new MyITerrain();
+            finalHeight = mTerrain.HeightToRaw((float)sp.up.TerrainHeight);
+
+            int minX;
+            int minZ;
+            int maxX;
+            int maxZ;
+
+            GetMinMax(out minX, out minZ, out maxX, out maxZ);
+
+            //we need to make sure that this was not a mouse click event
+            if (maxZ - minZ >= 1 && maxX - minX >= 1)
+            {
+                for (int i = minZ; i <= maxZ; i++)
+                {
+                    for (int j = minX; j <= maxX; j++)
+                    {
+                        int num = i * 1081 + j;
+                        //We want the prior backup in the 'original'
+                        m_originalHeights[num] = m_backupHeights[num];
+                        //We want the current in the back up
+                        m_backupHeights[num] = m_rawHeights[num];
+                        //We want the new height in the new/raw
+                        m_rawHeights[num] = finalHeight;
+                    }
+                }
+                //TerrainModify.UpdateArea(minX - 1, minZ - 1, maxX + 1, maxZ + 1, true, false, false);
+
+                //we need to update the area in 120 point sections
+                for (int i = minZ; i <= maxZ; i++)
+                {
+                    for (int j = minX; j <= maxX; j++)
+                    {
+                        TerrainModify.UpdateArea(j, i, Math.Max(j + 120, maxZ), Math.Max(i + 120, maxX), true, true, false);
+                        //log = j + ", " + i + ":" + Math.Max(j + 120, maxZ) + ", " + Math.Max(i + 120, maxX);
+                        //LoadingExtension.WriteLog("Processing: " + log);
+                        j += 119;
+                    }
+                    i += 119;
+                }
+
+                m_minX = minX;
+                m_maxX = maxX;
+                m_minZ = minZ;
+                m_maxZ = maxZ;
+
+                //Store the change
+                EndStroke();
+
+                //string coords = minX + ", " + minZ + ") : (" + maxX + ", " + maxZ + ") diff = (" + (maxX - minX) + ", " + (maxZ - minZ) + ")";
+                //log = "Exiting ApplyBrush: (minX, minZ) : (maxX, maxZ) = (" + coords;
+                //LoadingExtension.WriteLog(log);
+            }
+        }
+
+        void EndStroke()
+        {
+            ////creating the undo stroke
+            //log = "Entering EndStroke, count: " + sp.UndoList.Count;
+            //LoadingExtension.WriteLog(log);
+
+            UndoStroke item = default(UndoStroke);
+            item.name = "undo: " + sp.UndoList.Count;
+            item.minX = m_minX;
+            item.maxX = m_maxX;
+            item.minZ = m_minZ;
+            item.maxZ = m_maxZ;
+            item.pointer = sp.UndoList.Count;
+            item.rawHeights = m_rawHeights;
+            item.backupHeights = m_backupHeights;
+            item.originalHeights = m_originalHeights;
+
+            sp.UndoList.Add(item);
+
+            m_minX = 0;
+            m_maxX = 0;
+            m_minZ = 0;
+            m_maxZ = 0;
+
+            //log = "Leaving EndStroke, count: " + sp.UndoList.Count;
+            //LoadingExtension.WriteLog(log);
+        }
+
+        public bool IsUndoAvailable()
+        {
+            return sp.UndoList != null && sp.UndoList.Count > 0;
+        }
+
+        /// <summary>
+        /// used to apply the undo
+        /// revert the last terrain change
+        /// restore the back up to the prior back up
+        /// otherwise we overwrite the changes
+        /// </summary>
+        public void ApplyUndo()
+        {
+            if (sp.UndoList.Count < 1)
+            {
+                return;
+            }
+            //remove the current changes from the list (there are none)
+            UndoStroke undoStroke = sp.UndoList[sp.UndoList.Count - 1];
+            sp.UndoList.RemoveAt(sp.UndoList.Count - 1);
+
+            int minX = undoStroke.minX;
+            int maxX = undoStroke.maxX;
+            int minZ = undoStroke.minZ;
+            int maxZ = undoStroke.maxZ;
+            int pointer = undoStroke.pointer;
+
+            for (int i = minZ; i <= maxZ; i++)
+            {
+                for (int j = minX; j <= maxX; j++)
+                {
+                    int num = i * 1081 + j;
+                    //we want the new/raw to be the back up (un do)
+                    m_rawHeights[num] = undoStroke.backupHeights[num];
+                    //we want the prior backup to match the original (original as in one step back)
+                    m_backupHeights[num] = undoStroke.originalHeights[num];
+                }
+            }
+
+            m_minX = 0;
+            m_maxX = 0;
+            m_minZ = 0;
+            m_maxZ = 0;
+
+            //TerrainModify.UpdateArea(minX - 1, minZ - 1, maxX + 1, maxZ + 1, true, false, false);
+            //we need to update the area in 120 point sections
+            for (int i = minZ; i <= maxZ; i++)
+            {
+                for (int j = minX; j <= maxX; j++)
+                {
+                    TerrainModify.UpdateArea(j, i, Math.Max(j + 120, maxZ), Math.Max(i + 120, maxX), true, true, false);
+                    //log = j + ", " + i + ":" + Math.Max(j + 120, maxZ) + ", " + Math.Max(i + 120, maxX);
+                    //LoadingExtension.WriteLog("Processing: " + log);
+                    j += 119;
+                }
+                i += 119;
+            }
+
+            string coords = minX + " X " + maxX + " : " + minZ + " X " + maxZ;
+            log = "Exiting ApplyUndo: minX X maxX : minZ X maxZ = " + coords;
+            //LoadingExtension.WriteLog(log);
         }
         #endregion
 
@@ -429,104 +705,13 @@ namespace AnotherTerrain
 
         private bool checkMaxArea(Vector3 newMousePosition)
         {
-            if ((m_startPosition - newMousePosition).sqrMagnitude > m_maxArea * 5000)
-            {
-                return false;
-            }
+            //if ((SnapToTerrain(m_startPosition) - SnapToTerrain(newMousePosition)).sqrMagnitude > m_maxArea)
+            //{
+            //    return false;
+            //}
             return true;
         }
         #endregion
 
-        #region "Apply Changes"
-        private void ApplyTerrainChange()
-        {
-            //Figure out where to send this
-            if (m_mode == Modes.Square)
-            {
-                //Finally make the call to update the entire area with the new height
-                ApplyBrush();
-            }
-        }
-
-        /// <summary>
-        /// Used to make sure we can have our select be any direction, backwards, forwards, up, or down
-        /// </summary>
-        /// <param name="minX"></param>
-        /// <param name="minZ"></param>
-        /// <param name="maxX"></param>
-        /// <param name="maxZ"></param>
-        private void GetMinMax(out int minX, out int minZ, out int maxX, out int maxZ)
-        {
-            //we need to store the mouse positions
-            float startx = m_startPosition.x;
-            float startz = m_startPosition.z;
-            float endx = m_endPosition.x;
-            float endz = m_endPosition.z;
-
-            //we need the min and max coordinates
-            float min = 1;
-            float max = 1080;
-
-            string coords = startx + " X " + endx + " : " + startz + " X " + endz;
-            log = "ApplyBrush: startMouse.x X endMouse.x : startMouse.z X endMouse.z = " + coords;
-            LoadingExtension.WriteLog(log);
-
-            //Get the smaller X into startx and larger into endx
-            if (startx > endx)
-            {
-                minX = (int)Mathf.Max(ConvertCoords(endx), min);
-                maxX = (int)Mathf.Min(ConvertCoords(startx), max);
-            }
-            else
-            {
-                minX = (int)Mathf.Max(ConvertCoords(startx), min);
-                maxX = (int)Mathf.Min(ConvertCoords(endx), max);
-            }
-            //Get the smaller Z into startz and larger into endz
-            if (startz > endz)
-            {
-                minZ = (int)Mathf.Max(ConvertCoords(endz), min);
-                maxZ = (int)Mathf.Min(ConvertCoords(startz), max);
-            }
-            else
-            {
-                minZ = (int)Mathf.Max(ConvertCoords(startz), min);
-                maxZ = (int)Mathf.Min(ConvertCoords(endz), max);
-            }
-
-            coords = startx + " X " + endx + " : " + startz + " X " + endz;
-            log = "ApplyBrush: startMouse.x X endMouse.x : startMouse.z X endMouse.z = " + coords;
-            LoadingExtension.WriteLog(log);
-        }
-
-        private void ApplyBrush()
-        {
-            ushort finalHeight = 80;
-            int minX;
-            int minZ;
-            int maxX;
-            int maxZ;
-
-            GetMinMax(out minX, out minZ, out maxX, out maxZ);
-
-            //we need to make sure that this was not a mouse click event
-            if (maxZ - minZ >= 2 && maxX - minX > 2)
-            {
-                for (int i = minZ; i <= maxZ; i++)
-                {
-                    for (int j = minX; j <= maxX; j++)
-                    {
-                        //we need to set the height
-                        m_rawHeights[i * 1081 + j] = finalHeight;
-                        //Turning this on kills performence
-                        //LoadingExtension.WriteLog("i X j = " + i + " X " + j);
-                    }
-                }
-                TerrainModify.UpdateArea(minX - 1, minZ - 1, maxX + 1, maxZ + 1, true, true, false);
-                log = "Exiting ApplyBrush";
-                LoadingExtension.WriteLog(log);
-            }
-        }
-        #endregion
     }
 }
