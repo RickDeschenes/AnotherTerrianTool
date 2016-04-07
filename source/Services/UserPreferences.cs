@@ -5,6 +5,9 @@ namespace AnotherTerrain.Services
     [Serializable]
     public class UserPreferences
     {
+        const int min = 0;
+        const int max = 1080;
+
         private double m_TerrainHeight = 50;
         /// <summary>
         /// Min and Max set in UITextBox
@@ -15,33 +18,42 @@ namespace AnotherTerrain.Services
             set { m_TerrainHeight = value; }
         }
 
-        private int m_MaxArea = 8000;
+        private int m_StartX = 0;
         /// <summary>
-        /// Min and Max set in UITextBox
+        /// Min and Max set to 0, 1080
         /// </summary>
-        public int MaxArea
+        public int StartX
         {
-            get { return m_MaxArea; }
-            set { m_MaxArea = value; }
+            get { return m_StartX; }
+            set { m_StartX = Math.Max(Math.Min(value,max),min); }
         }
 
-        private int m_MaxHeight = 800;
+        private int m_StartZ = 0;
         /// <summary>
-        /// Min and Max set in UITextBox
+        /// Min and Max set to 0, 1080
         /// </summary>
-        public int MaxHeight
+        public int StartZ
         {
-            get { return m_MaxHeight; }
-            set { m_MaxHeight = value; }
+            get { return m_StartZ; }
+            set { m_StartZ = Math.Max(Math.Min(value, max), min); }
         }
-        private int m_MaxWidth = 800;
+        private int m_EndX = 1080;
         /// <summary>
-        /// Min and Max set in UITextBox
+        /// Min and Max set to 0, 1080
         /// </summary>
-        public int MaxWidth
+        public int EndX
         {
-            get { return m_MaxWidth; }
-            set { m_MaxWidth = value; }
+            get { return m_EndX; }
+            set { m_EndX = Math.Max(Math.Min(value, max), min); }
+        }
+        private int m_EndZ = 1080;
+        /// <summary>
+        /// Min and Max set to 0, 1080
+        /// </summary>
+        public int EndZ
+        {
+            get { return m_EndZ; }
+            set { m_EndZ = Math.Max(Math.Min(value, max), min); }
         }
 
         private int m_SettingsTop = 1;

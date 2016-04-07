@@ -1,5 +1,6 @@
 ﻿using ICities;
 using System;
+using UnityEngine;
 
 namespace AnotherTerrain.Services
 {
@@ -17,7 +18,7 @@ namespace AnotherTerrain.Services
         {
             get
             {
-                throw new NotImplementedException();
+                return 0;
             }
         }
 
@@ -25,26 +26,18 @@ namespace AnotherTerrain.Services
         {
             get
             {
-                throw new NotImplementedException();
+                return 0;
             }
         }
 
-        //public IManagers managers
-        //{
-        //    get
-        //    {
-        //        throw new NotImplementedException();
-        //    }
-        //}
-
         public void GetHeights(int heightX, int heightZ, int heightWidth, int heightLength, ushort[] rawHeights)
         {
-            throw new NotImplementedException();
+            mTerrain.GetHeights(heightX, heightZ, heightWidth, heightLength, rawHeights);
         }
 
         public void HeightMapCoordToPosition(int heightX, int heightZ, out float x, out float z)
         {
-            throw new NotImplementedException();
+            mTerrain.HeightMapCoordToPosition(heightX, heightZ, out x, out z);
         }
 
         public ushort HeightToRaw(float height)
@@ -54,7 +47,7 @@ namespace AnotherTerrain.Services
 
         public void PositionToHeightMapCoord(float x, float z, out int heightX, out int heightZ)
         {
-            throw new NotImplementedException();
+            mTerrain.PositionToHeightMapCoord(x, z, out heightX, out heightZ);
         }
 
         public float RawToHeight(ushort rawHeight)
@@ -64,17 +57,17 @@ namespace AnotherTerrain.Services
 
         public float SampleTerrainHeight(float x, float z)
         {
-            throw new NotImplementedException();
+            return mTerrain.SampleTerrainHeight(x, z);
         }
 
         public float SampleWaterHeight(float x, float z)
         {
-            throw new NotImplementedException();
+            return mTerrain.SampleWaterHeight(x,  z);
         }
 
         public void SetHeights(int heightX, int heightZ, int heightWidth, int heightLength, ushort[] rawHeights)
         {
-            throw new NotImplementedException();
+            mTerrain.SetHeights(heightX,  heightZ,  heightWidth,  heightLength,  rawHeights);
         }
     }
 }

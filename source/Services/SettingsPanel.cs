@@ -6,16 +6,12 @@ using System.Xml.Serialization;
 using ColossalFramework.UI;
 using UnityEngine;
 using AnotherTerrain.Services;
+using System.ComponentModel;
 
 namespace AnotherTerrain.Services
 {
     public delegate void SettingsPanelEventHandler(float x, float y);
     public delegate void ApplyUndoEventHandler();
-
-    //public struct UndoBuffer
-    //{
-    //    ushort[] undoBuffer;
-    //}
 
     /// <summary>
     /// I am the paint brush types
@@ -29,6 +25,9 @@ namespace AnotherTerrain.Services
         Empty
     }
 
+    /// <summary>
+    /// Value types for the text box types
+    /// </summary>
     public enum ValueType
     {
         Textual,
@@ -36,6 +35,10 @@ namespace AnotherTerrain.Services
         Whole
     }
 
+    /// <summary>
+    /// this stores the changes
+    /// will allow complete backout of all changes
+    /// </summary>
     public struct UndoStroke
     {
         public string name;
@@ -49,6 +52,10 @@ namespace AnotherTerrain.Services
         public int pointer;
     }
 
+    /// <summary>
+    /// The settings used to help the user
+    /// use the test boxes to paint an area or select one with you mouse
+    /// </summary>
     public class SettingsPanel : UIPanel
     {
         Vector2 m_Resolution = new Vector2(Screen.currentResolution.height, Screen.currentResolution.width);
@@ -62,14 +69,19 @@ namespace AnotherTerrain.Services
         UILabel lbTerrainLabel;
         UITextField tfTerrainHeight;
         UILabel lbTerrainHeight;
-        UICheckboxDropDown cbTerrainPattern;
-        UILabel lbTerrainPattern;
-        UITextField tfMaxArea;
-        UILabel lbMaxArea;
-        UITextField tfMaxHeight;
-        UILabel lbMaxHeight;
-        UITextField tfMaxWidth;
-        UILabel lbMaxWidth;
+        //UICheckboxDropDown cbTerrainPattern;
+        //UILabel lbTerrainPattern;
+        //UILabel lbRenderLabel;
+        //UICheckBox lbRenderCheckBox;
+        //UITextField tfStartX;
+        //UILabel lbStartX;
+        //UITextField tfStartZ;
+        //UILabel lbStartZ;
+        //UITextField tfEndX;
+        //UILabel lbEndX;
+        //UITextField tfEndZ;
+        //UILabel lbEndZ;
+        //UIButton btRenderButton;
         //UILabel lbSettingsLabel;
         //UILabel lbSettingsTop;
         //UITextField tfSettingsTop;
@@ -79,24 +91,30 @@ namespace AnotherTerrain.Services
         //UITextField tfSettingsHeight;
         //UILabel lbSettingsWidth;
         //UITextField tfSettingsWidth;
-        UIButton btUndoButton;
         UILabel lbUndoButton;
+        UIButton btUndoButton;
+        //UILabel lbInfoLabel;
 
-        public List<UndoStroke> UndoList;
+        public BindingList<UndoStroke> UndoList;
 
         private bool mouseDown;
         private string log;
         private float bottomToolbar = 120;
-        
+        private int min = 0;
+        private int max = 1080;
+
         public UserPreferences up = new UserPreferences();
         
         public event SettingsPanelEventHandler MoveCompleted;
         public event ApplyUndoEventHandler ApplyUndo;
 
+        /// <summary>
+        /// yawn now what!
+        /// </summary>
         public override void Awake()
         {
             log = "entering SettingsPanel Awake";
-            LoadingExtension.WriteLog(log);
+            //LoadingExtension.WriteLog(log);
 
             isInteractive = true;
             enabled = true;
@@ -114,14 +132,21 @@ namespace AnotherTerrain.Services
             lbTerrainLabel = AddUIComponent<UILabel>();
             lbTerrainHeight = AddUIComponent<UILabel>();
             tfTerrainHeight = AddUIComponent<UITextField>();
-            cbTerrainPattern = AddUIComponent<UICheckboxDropDown>();
-            lbTerrainPattern = AddUIComponent<UILabel>();
-            tfMaxArea = AddUIComponent<UITextField>();
-            lbMaxArea = AddUIComponent<UILabel>();
-            tfMaxHeight = AddUIComponent<UITextField>();
-            lbMaxHeight = AddUIComponent<UILabel>();
-            tfMaxWidth = AddUIComponent<UITextField>();
-            lbMaxWidth = AddUIComponent<UILabel>();
+            //cbTerrainPattern = AddUIComponent<UICheckboxDropDown>();
+            //lbTerrainPattern = AddUIComponent<UILabel>();
+
+            //lbRenderLabel = AddUIComponent<UILabel>();
+            //lbRenderCheckBox = AddUIComponent<UICheckBox>();
+
+            //tfStartX = AddUIComponent<UITextField>();
+            //lbStartX = AddUIComponent<UILabel>();
+            //tfStartZ = AddUIComponent<UITextField>();
+            //lbStartZ = AddUIComponent<UILabel>();
+            //tfEndX = AddUIComponent<UITextField>();
+            //lbEndX = AddUIComponent<UILabel>();
+            //tfEndZ = AddUIComponent<UITextField>();
+            //lbEndZ = AddUIComponent<UILabel>();
+            //btRenderButton = AddUIComponent<UIButton>();
             //lbSettingsLabel = AddUIComponent<UILabel>();
             //tfSettingsTop = AddUIComponent<UITextField>();
             //lbSettingsTop = AddUIComponent<UILabel>();
@@ -131,22 +156,28 @@ namespace AnotherTerrain.Services
             //tfSettingsHeight = AddUIComponent<UITextField>();
             //lbSettingsWidth = AddUIComponent<UILabel>();
             //tfSettingsWidth = AddUIComponent<UITextField>();
-            btUndoButton = AddUIComponent<UIButton>();
             lbUndoButton = AddUIComponent<UILabel>();
+            btUndoButton = AddUIComponent<UIButton>();
+            //lbInfoLabel = AddUIComponent<UILabel>();
 
             base.Awake();
 
             log = "leaving SettingsPanel Awake";
-            LoadingExtension.WriteLog(log);
+            //LoadingExtension.WriteLog(log);
         }
+
+        /// <summary>
+        /// I am ready!
+        /// </summary>
         public override void Start()
         {
             base.Start();
 
             log = "entering SettingsPanel Start";
-            LoadingExtension.WriteLog(log);
+            //LoadingExtension.WriteLog(log);
 
-            //relativePosition = new Vector3(1550f, 550f);
+            this.relativePosition = new Vector3(up.SettingsLeft, up.SettingsTop, 0);
+
             backgroundSprite = "MenuPanel2";
             isInteractive = true;
             titleLabel.eventMouseDown += titleLabel_eventMouseDown;
@@ -155,19 +186,22 @@ namespace AnotherTerrain.Services
             
             eventSizeChanged += SettingsPanel_eventSizeChanged;            
 
-            log = string.Format("Leaving SettingsPanel Start: relativePosition: {9}, up.TerrainHeight: {0}, up.TerrainPattern: {1}, up.SettingsTop: {2}, up.SettingsLeft: {3}, up.SettingsWidth: {4}, up.SettingsHeight: {5}, up.MaxArea: {6}, up.MaxHeight: {7}, up.MaxWidth:, {8}", up.TerrainHeight, up.TerrainPattern, up.SettingsTop, up.SettingsLeft, up.SettingsWidth, up.SettingsHeight, up.MaxArea, up.MaxHeight, up.MaxWidth, relativePosition);
-            LoadingExtension.WriteLog(log);
+            log = string.Format("Leaving SettingsPanel Start: relativePosition: {9}, up.TerrainHeight: {0}, up.TerrainPattern: {1}, up.SettingsTop: {2}, up.SettingsLeft: {3}, up.SettingsWidth: {4}, up.SettingsHeight: {5}, up.StartX: {6}, up.StartZ: {7}, up.EndX:, {8}", up.TerrainHeight, up.TerrainPattern, up.SettingsTop, up.SettingsLeft, up.SettingsWidth, up.SettingsHeight, up.StartX, up.StartZ, up.EndX, relativePosition);
+            //LoadingExtension.WriteLog(log);
         }
 
+        /// <summary>
+        /// Start me up
+        /// </summary>
         public override void OnEnable()
         {
             base.Update();
 
             log = "Entering SettingsPanel OnEnable";
-            LoadingExtension.WriteLog(log);
+            //LoadingExtension.WriteLog(log);
 
             log = "SettingsPanel Start loading XML user prefs";
-            LoadingExtension.WriteLog(log);
+            //LoadingExtension.WriteLog(log);
 
             XmlSerializer mySerializer = new XmlSerializer(typeof(UserPreferences));
             FileStream myFileStream = new FileStream("UserPreferences.xml", FileMode.Open);
@@ -175,24 +209,28 @@ namespace AnotherTerrain.Services
             up = (UserPreferences)mySerializer.Deserialize(myFileStream);
 
             log = "SettingsPanel Start Validate Preferences";
-            LoadingExtension.WriteLog(log);
+            //LoadingExtension.WriteLog(log);
             //Make sure we have the minimum values
-            if (up.MaxArea < 400)
-                up.MaxArea = 400;
-            if (up.MaxHeight < 400)
-                up.MaxHeight = 400;
-            if (up.MaxWidth < 400)
-                up.MaxWidth = 400;
             if (up.TerrainHeight < 50)
                 up.TerrainHeight = 50;
-            if (up.MaxArea > 9999)
-                up.MaxArea = 9999;
-            if (up.MaxHeight > 9999)
-                up.MaxHeight = 9999;
-            if (up.MaxWidth > 9999)
-                up.MaxWidth = 9999;
             if (up.TerrainHeight > 2000)
-                up.TerrainHeight = 50;
+                up.TerrainHeight = 2000;
+            if (up.StartX < min)
+                up.StartX = min;
+            if (up.StartX > max)
+                up.StartX = max;
+            if (up.StartZ < min)
+                up.StartZ = min;
+            if (up.StartZ > max)
+                up.StartZ = max;
+            if (up.EndX < min)
+                up.EndX = min;
+            if (up.EndX > max)
+                up.EndX = max;
+            if (up.EndZ < min)
+                up.EndZ = min;
+            if (up.EndZ > max)
+                up.EndZ = max;
             if (up.SettingsTop < 1)
                 up.SettingsTop = 1;
             if (up.SettingsLeft < 1)
@@ -211,18 +249,23 @@ namespace AnotherTerrain.Services
                 up.SettingsHeight = 400;
 
             log = "SettingsPanel Start Set up controls";
-            LoadingExtension.WriteLog(log);
+            //LoadingExtension.WriteLog(log);
             Vector2 wh = SetControl("Another Terrain Tool Options");
 
             width = wh.x;
             height = wh.y;
 
-            relativePosition = new Vector3(up.SettingsLeft, up.SettingsTop, 0);
+            this.relativePosition = new Vector3(up.SettingsLeft, up.SettingsTop, 0);
+
+            UndoList = new BindingList<UndoStroke>();
 
             log = string.Format("Leaving SettingsPanel OnEnable location: Top {0} x Left {1}: ", this.position.y, this.position.x);
-            LoadingExtension.WriteLog(log);
+            //LoadingExtension.WriteLog(log);
         }
 
+        /// <summary>
+        /// Clean me up scottie
+        /// </summary>
         public override void OnDisable()
         {
             XmlSerializer mySerializer = new XmlSerializer(typeof(UserPreferences));
@@ -230,12 +273,30 @@ namespace AnotherTerrain.Services
             mySerializer.Serialize(myWriter, up);
             myWriter.Close();
 
-            log = string.Format("Leaving OnDisable Start: relativePosition: {9}, up.TerrainHeight: {0}, up.TerrainPattern: {1}, up.SettingsTop: {2}, up.SettingsLeft: {3}, up.SettingsWidth: {4}, up.SettingsHeight: {5}, up.MaxArea: {6}, up.MaxHeight: {7}, up.MaxWidth:, {8}", up.TerrainHeight, up.TerrainPattern, up.SettingsTop, up.SettingsLeft, up.SettingsWidth, up.SettingsHeight, up.MaxArea, up.MaxHeight, up.MaxWidth, relativePosition);
-            LoadingExtension.WriteLog(log);
+            log = string.Format("Leaving OnDisable Start: relativePosition: {9}, up.TerrainHeight: {0}, up.TerrainPattern: {1}, up.SettingsTop: {2}, up.SettingsLeft: {3}, up.SettingsWidth: {4}, up.SettingsHeight: {5}, up.StartX: {6}, up.StartZ: {7}, up.EndX:, {8}", up.TerrainHeight, up.TerrainPattern, up.SettingsTop, up.SettingsLeft, up.SettingsWidth, up.SettingsHeight, up.StartX, up.StartZ, up.EndX, relativePosition);
+            //LoadingExtension.WriteLog(log);
 
             base.OnDisable();
         }
 
+        /// <summary>
+        /// Return true is we have any values
+        /// </summary>
+        /// <returns>True if we have values</returns>
+        public bool ListCount()
+        {
+            if (UndoList != null)
+            {
+                return (UndoList.Count > 0);
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// if we resize make sure we are still large enough
+        /// </summary>
+        /// <param name="component"></param>
+        /// <param name="value"></param>
         private void SettingsPanel_eventSizeChanged(UIComponent component, Vector2 value)
         {
             //set minimum values
@@ -254,11 +315,21 @@ namespace AnotherTerrain.Services
             //LoadingExtension.WriteLog(log);
         }
 
+        /// <summary>
+        /// handle the drag drop event
+        /// </summary>
+        /// <param name="component"></param>
+        /// <param name="eventParam"></param>
         private void titleLabel_eventMouseDown(UIComponent component, UIMouseEventParameter eventParam)
         {
             mouseDown = Input.GetMouseButton(0);
         }
 
+        /// <summary>
+        /// handle the drag drop event
+        /// </summary>
+        /// <param name="component"></param>
+        /// <param name="eventParam"></param>
         private void titleLabel_eventMouseMove(UIComponent component, UIMouseEventParameter eventParam)
         {
             if (mouseDown == true)
@@ -277,6 +348,11 @@ namespace AnotherTerrain.Services
             }
         }
 
+        /// <summary>
+        /// Handle the drag drop event
+        /// </summary>
+        /// <param name="component"></param>
+        /// <param name="eventParam"></param>
         private void titleLabel_eventMouseUp(UIComponent component, UIMouseEventParameter eventParam)
         {
             if (mouseDown == true)
@@ -313,15 +389,15 @@ namespace AnotherTerrain.Services
             mouseDown = false;
         }
 
-        private static float ConvertCoords(float coords, bool ScreenToTerrain = true)
-        {
-            return ScreenToTerrain ? coords / 16f + 1080 / 2 : (coords - 1080 / 2) * 16f;
-        }
-
+        /// <summary>
+        /// Set up the controls for the settings panel
+        /// </summary>
+        /// <param name="title"></param>
+        /// <returns></returns>
         private Vector2 SetControl(string title)
         {
-            log = "Entering SettingsPanel SetControl";
-            LoadingExtension.WriteLog(log);
+            //log = "Entering SettingsPanel SetControl";
+            //LoadingExtension.WriteLog(log);
 
             Vector2 result = new Vector2(550, 250);
             try
@@ -330,83 +406,100 @@ namespace AnotherTerrain.Services
                 titleLabel.relativePosition = new Vector3(1, 1);
                 titleLabel.autoSize = false;
                 titleLabel.color = Color.white;
-                titleLabel.size = new Vector2(width, 40);
+                titleLabel.size = new Vector2(this.width, 40);
                 titleLabel.textScale = 0.9f;
                 titleLabel.textAlignment = UIHorizontalAlignment.Center;
                 titleLabel.verticalAlignment = UIVerticalAlignment.Middle;
 
                 var vertPadding = 30;
-                var x = 15;
-                var y = 50;
-                int l = 120;
-                int w = 100;
-                int h = 20;
+                var left = 15;
+                var top = 50;
+                int lenght = 120;
+                int width = 100;
+                int height = 20;
                 
                 //Now set the location and size
-                SetLabel(lbTerrainLabel, "Terrain options", x, y);
-                y += vertPadding;
+                SetLabel(lbTerrainLabel, "Terrain options", 5, top, lenght, height);
+                top += vertPadding;
 
                 double val = up.TerrainHeight;
 
-                SetLabel(lbTerrainHeight, "New Terrain Height", x, y);
-                SetTextBox(tfTerrainHeight, "TerrainHeight", up.TerrainHeight.ToString(), x + l, y, w, h, "Use values between 2000 and 0.01", new Vector2(50f, 2000f), ValueType.Real);
-                y += vertPadding;
+                SetLabel(lbTerrainHeight, "New Terrain Height", left, top + 5, lenght, height);
+                SetTextBox(tfTerrainHeight, "TerrainHeight", up.TerrainHeight.ToString(), left + lenght, top, width, height, "Use values between 2000 and 0.01", new Vector2(50f, 2000f), ValueType.Real);
+                top += vertPadding;
 
-                string[] vals = { "Square", "Ellipses", "Triangle", "Star", "Empty" };
+                //string[] vals = { "Square", "Ellipses", "Triangle", "Star", "Empty" };
 
-                SetLabel(lbTerrainPattern, "New Terrain Pattern", x, y);
-                SetCheckBoxDropDown(cbTerrainPattern, vals, x + l, y, w, h, "Use values between 24 and 0");
-                y += vertPadding;
+                //SetLabel(lbTerrainPattern, "New Terrain Pattern", 5, top + 5, lenght, height);
+                //SetCheckBoxDropDown(cbTerrainPattern, vals, left + lenght, top, width, height, "Use values between 24 and 0");
+                //top += vertPadding;
 
-                int vl = up.MaxArea;
-                SetLabel(lbMaxArea, "Selectable Area", x, y);
-                SetTextBox(tfMaxArea, "MaxArea", up.MaxArea.ToString(), x + l, y, w, h, "Use values between 400 and 9999", new Vector2(400f, 9999f), ValueType.Whole);
-                y += vertPadding;
+                //string values = string.Concat("Use values between {0} and {1}.", min, max);
+                //Vector2 vec = new Vector2(min, max);
 
-                vl = up.MaxHeight;
-                SetLabel(lbMaxHeight, "Selectable Height", x, y);
-                SetTextBox(tfMaxHeight, "MaxHeight", up.MaxHeight.ToString(), x + l, y, w, h, "Use values between 2000 and 0.01", new Vector2(400f, 9999f), ValueType.Whole);
-                y += vertPadding;
+                //int vl = up.StartX;
+                //SetLabel(lbStartX, "Start X", left, top + 5, lenght, height);
+                //SetTextBox(tfStartX, "StartX", up.StartX.ToString(), left + lenght, top, width, height, values, vec, ValueType.Whole);
+                //top += vertPadding;
 
-                vl = up.MaxWidth;
-                SetLabel(lbMaxWidth, "Selectable Width", x, y);
-                SetTextBox(tfMaxWidth, "MaxWidth", up.MaxWidth.ToString(), x + l, y, w, h, "Use values between 2000 and 0.01", new Vector2(400f, 9999f), ValueType.Whole);
-                y += vertPadding;
+                //vl = up.StartZ;
+                //SetLabel(lbStartZ, "Start Z", left, top + 5, lenght, height);
+                //SetTextBox(tfStartZ, "StartZ", up.StartZ.ToString(), left + lenght, top, width, height, values, vec, ValueType.Whole);
+                //top += vertPadding;
+
+                //vl = up.EndX;
+                //SetLabel(lbEndX, "End X", left, top + 5, lenght, height);
+                //SetTextBox(tfEndX, "EndX", up.EndX.ToString(), left + lenght, top, width, height, values, vec, ValueType.Whole);
+                //top += vertPadding;
+
+                //vl = up.EndZ;
+                //SetLabel(lbEndZ, "End Z", left, top + 5, lenght, height);
+                //SetTextBox(tfEndZ, "EndZ", up.EndX.ToString(), left + lenght, top, width, height, values, vec, ValueType.Whole);
+                //top += vertPadding;
+
+                //SetButton(btRenderButton, "Update Rendered Area", left, top, Convert.ToInt32(this.width - 20), height + 10, "Undo last update.");
+                //top += vertPadding;
 
                 ////Now set the location and size
-                //SetLabel(lbSettingsLabel, "Screen position", x, y);
-                //y += vertPadding;
+                //SetLabel(lbSettingsLabel, "Screen position", 5, top + 5, lenght, height);
+                //top += vertPadding;
+
+                //Vector2 vcw = new Vector2(1f, 1620f);
+                //string hor = string.Concat("Use values between {0} and {1}.", 1f, 1620f);
+                //Vector2 vch = new Vector2(1f, 1080f);
+                //string ver = string.Concat("Use values between {0} and {1}.", 1f, 1080f);
 
                 //vl = up.SettingsTop;
-                //SetLabel(lbSettingsTop, "Top position", x, y);
-                //SetTextBox(tfSettingsTop, "SettingsTop", up.SettingsTop.ToString(), x + l, y, w, h, "Use values between 1 and 1620", new Vector2(1f, 1620f), ValueType.Whole);
-                //y += vertPadding;
+                //SetLabel(lbSettingsTop, "Top position", left, top + 5, lenght, height);
+                //SetTextBox(tfSettingsTop, "SettingsTop", up.SettingsTop.ToString(), left + lenght, top, width, height, hor, vcw, ValueType.Whole);
+                //top += vertPadding;
 
                 //vl = up.SettingsLeft;
-                //SetLabel(lbSettingsLeft, "Left position", x, y);
-                //SetTextBox(tfSettingsLeft, "SettingsLeft", up.SettingsLeft.ToString(), x + l, y, w, h, "Use values between 1 and 1080", new Vector2(1f, 1080f), ValueType.Whole);
-                //y += vertPadding;
+                //SetLabel(lbSettingsLeft, "Left position", left, top + 5, lenght, height);
+                //SetTextBox(tfSettingsLeft, "SettingsLeft", up.SettingsLeft.ToString(), left + lenght, top, width, height, hor, vch, ValueType.Whole);
+                //top += vertPadding;
 
                 //vl = up.SettingsHeight;
-                //SetLabel(lbSettingsHeight, "Height size", x, y);
-                //SetTextBox(tfSettingsHeight, "SettingsHeight", up.SettingsHeight.ToString(), x + l, y, w, h, "Use values between 250 and 1080", new Vector2(1f, 1080f), ValueType.Whole);
-                //y += vertPadding;
+                //SetLabel(lbSettingsHeight, "Height size", left, top + 5, lenght, height);
+                //SetTextBox(tfSettingsHeight, "SettingsHeight", up.SettingsHeight.ToString(), left + lenght, top, width, height, hor, vch, ValueType.Whole);
+                //top += vertPadding;
 
                 //vl = up.SettingsWidth;
-                //SetLabel(lbSettingsWidth, "Width position", x, y);
-                //SetTextBox(tfSettingsWidth, "SettingsWidth", up.SettingsWidth.ToString(), x + l, y, w, h, "Use values between 250 and 1620", new Vector2(1f, 1620f), ValueType.Whole);
-                //y += vertPadding;
+                //SetLabel(lbSettingsWidth, "Width position", left, top + 5, lenght, height);
+                //SetTextBox(tfSettingsWidth, "SettingsWidth", up.SettingsWidth.ToString(), left + lenght, top, width, height, hor, vcw, ValueType.Whole);
+                //top += vertPadding;
 
                 //Display the List of Undoable changes
-                SetLabel(lbUndoButton, "Undo changes", x, y);
-                y += vertPadding;
-                btUndoButton = SetButton(btUndoButton, "Undo Changes", x, y, Convert.ToInt32(width) - 60, "Undo last update.");
-                y += vertPadding;
-               
-                SetLabel(lbUndoButton, "Look here for information", x, y);
-                y += (vertPadding + 30);
+                SetLabel(lbUndoButton, "Undo changes", 5, top, lenght, height);
+                top += vertPadding;
 
-                result.y = y + 0;
+                SetButton(btUndoButton, "Undo Changes", left, top - 10, Convert.ToInt32(this.width - 20), height + 10, "Undo last update.");
+                top += vertPadding;
+
+                //SetLabel(lbInfoLabel, "Look here for information", left, top + 5, lenght, height);
+                //top += vertPadding;
+
+                result.y = top;
                 result.x = 250;
             }
             catch (Exception e)
@@ -414,12 +507,25 @@ namespace AnotherTerrain.Services
                 LoadingExtension.WriteLog(e.Message);
             }
 
-            log = "Leaving SettingsPanel SetControl results: " + result;
-            LoadingExtension.WriteLog(log);
+            //log = "Leaving SettingsPanel SetControl results: " + result;
+            //LoadingExtension.WriteLog(log);
 
             return result;
         }
 
+        /// <summary>
+        /// Set up out test boxes
+        /// </summary>
+        /// <param name="tf"></param>
+        /// <param name="name"></param>
+        /// <param name="text"></param>
+        /// <param name="top"></param>
+        /// <param name="left"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <param name="tooltip"></param>
+        /// <param name="minmax"></param>
+        /// <param name="valueType"></param>
         public void SetTextBox(UITextField tf, string name, string text, int top, int left, int width, int height, string tooltip, Vector2 minmax, ValueType valueType)
         {
             tf.relativePosition = new Vector3(top, left);
@@ -430,6 +536,7 @@ namespace AnotherTerrain.Services
             tf.height = height;
             tf.tooltip = tooltip;
             tf.numericalOnly = (valueType != ValueType.Textual);
+            tf.allowFloats = (valueType != ValueType.Textual) && (valueType != ValueType.Whole);
             tf.textScale = 0.8f;
             tf.color = Color.black;
             tf.cursorBlinkTime = 0.45f;
@@ -450,14 +557,20 @@ namespace AnotherTerrain.Services
 
             tf.eventTextChanged += TextBox_eventTextChanged;
             //used to validate a setting
+            //log = string.Concat("numerical: {0} floats: {1}", tf.numericalOnly, tf.allowFloats);
             //log = "(valueType != ValueType.Textual: " + (valueType != ValueType.Textual);
             //LoadingExtension.WriteLog(log);
         }
 
+        /// <summary>
+        /// Lets see about handling the text changes
+        /// </summary>
+        /// <param name="component"></param>
+        /// <param name="value"></param>
         private void TextBox_eventTextChanged(UIComponent component, string value)
         {
             log = "Entering Settings Panel eventTextChanged";
-            LoadingExtension.WriteLog(log);
+           // LoadingExtension.WriteLog(log);
 
             UITextField tf = (UITextField)component;
             tf.text = Regex.Replace(tf.text, "[^0-9]", "");
@@ -469,43 +582,47 @@ namespace AnotherTerrain.Services
 
             int tmp;
             log = "Settings Panel eventTextChanged - setting Textfield: " + tf.name;
-            LoadingExtension.WriteLog(log);
+           // LoadingExtension.WriteLog(log);
             try
             {
                 switch (tf.name)
                 {
                     case "TerrainHeight":
-                        double dtmp = ReturnDouble(value, 50, 2000);
+                        double dtmp = ReturnDouble(value, 0.01, 2000);
                         up.TerrainHeight = dtmp;
                         break;
-                    case "MaxArea":
-                        tmp = ReturnInteger(value, 400, 9999);
-                        up.MaxArea = tmp;
+                    case "StartX":
+                        tmp = ReturnInteger(value, 0, 1080);
+                        up.StartX = tmp;
                         break;
-                    case "MaxHeight":
-                        tmp = ReturnInteger(value, 400, 9999);
-                        up.MaxHeight = tmp;
+                    case "StartZ":
+                        tmp = ReturnInteger(value, 0, 1080);
+                        up.StartZ = tmp;
                         break;
-                    case "MaxWidth":
-                        tmp = ReturnInteger(value, 400, 9999);
-                        up.MaxWidth = tmp;
+                    case "EndX":
+                        tmp = ReturnInteger(value, 0, 1080);
+                        up.EndX = tmp;
                         break;
-                    //case "SettingsTop":
-                    //    tmp = ReturnInteger(value, 1, 1060);
-                    //    up.SettingsTop = tmp;
-                    //    break;
-                    //case "SettingsLeft":
-                    //    tmp = ReturnInteger(value, 1, 1920);
-                    //    up.SettingsLeft = tmp;
-                    //    break;
-                    //case "SettingsHeight":
-                    //    tmp = ReturnInteger(value, 350, 1020);
-                    //    up.SettingsHeight = tmp;
-                    //    break;
-                    //case "SettingsWidth":
-                    //    tmp = ReturnInteger(value, 250, 1920);
-                    //    up.SettingsWidth = tmp;
-                        //break;
+                    case "EndZ":
+                        tmp = ReturnInteger(value, 0, 1080);
+                        up.EndX = tmp;
+                        break;
+                    case "SettingsTop":
+                        tmp = ReturnInteger(value, 1, 1090);
+                        up.SettingsTop = tmp;
+                        break;
+                    case "SettingsLeft":
+                        tmp = ReturnInteger(value, 1, 1920);
+                        up.SettingsLeft = tmp;
+                        break;
+                    case "SettingsHeight":
+                        tmp = ReturnInteger(value, 350, 1020);
+                        up.SettingsHeight = tmp;
+                        break;
+                    case "SettingsWidth":
+                        tmp = ReturnInteger(value, 250, 1920);
+                        up.SettingsWidth = tmp;
+                        break;
                     default:
                         break;
                 }
@@ -514,35 +631,69 @@ namespace AnotherTerrain.Services
             {
                 LoadingExtension.WriteLog(e.Message);
             }
-            log = "Leaving Settings Panel eventTextChanged - name: : " + tf.name + ", Value: " + tf.text;
-            LoadingExtension.WriteLog(log);
+            log = "Leaving SettingsPanel eventTextChanged - name: : " + tf.name + ", Value: " + tf.text;
+           // LoadingExtension.WriteLog(log);
         }
 
-        private UIButton SetButton(UIButton okButton, string p1, int x, int y, int w, string tt)
+        /// <summary>
+        /// Set up our button object
+        /// </summary>
+        /// <param name="bt"></param>
+        /// <param name="p1"></param>
+        /// <param name="top"></param>
+        /// <param name="left"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <param name="tt"></param>
+        private void SetButton(UIButton bt, string p1, int top, int left, int width, int height, string tt)
         {
-            okButton.text = p1;
-            okButton.normalBgSprite = "ButtonMenu";
-            okButton.hoveredBgSprite = "ButtonMenuHovered";
-            okButton.disabledBgSprite = "ButtonMenuDisabled";
-            okButton.focusedBgSprite = "ButtonMenuFocused";
-            okButton.pressedBgSprite = "ButtonMenuPressed";
-            okButton.width = w;
-            okButton.height = 30;
-            okButton.tooltip = tt;
-            okButton.size = new Vector2(w, 30);
-            okButton.relativePosition = new Vector3(x, y - 10);
-            okButton.textScale = 0.8f;
-            okButton.enabled = false;
-            okButton.eventClick += undoMapButton_eventClick;
+            bt.name = "UndoButton";
+            bt.text = p1;
+            bt.normalBgSprite = "ButtonMenu";
+            bt.hoveredBgSprite = "ButtonMenuHovered";
+            bt.disabledBgSprite = "ButtonMenuDisabled";
+            bt.focusedBgSprite = "ButtonMenuFocused";
+            bt.pressedBgSprite = "ButtonMenuPressed";
+            bt.size = new Vector2(width, height);
+            bt.relativePosition = new Vector3(top, left);
+            bt.textScale = 0.8f;
+            bt.tooltip = tt;
 
-            return okButton;
+            bt.eventClick += btUndoButton_eventClick;
+
+            try
+            {
+                bt.enabled = true;
+            }
+            catch (Exception e)
+            {
+                LoadingExtension.WriteLog("Error setting enabled: " + e.Message);
+            }
+            //log = "undoButton text, top, left, width, height, tooltip: " + p1 + ", " + top + ", " + left + ", " + width + ", " + height + ", " + tt;
+            //LoadingExtension.WriteLog(log);
         }
 
-        private void undoMapButton_eventClick(UIComponent component, UIMouseEventParameter eventParam)
+        /// <summary>
+        /// Used to capture the Click Event
+        /// </summary>
+        /// <param name="component"></param>
+        /// <param name="eventParam"></param>
+        private void btUndoButton_eventClick(UIComponent component, UIMouseEventParameter eventParam)
         {
-            ApplyUndo();
+            if (this.UndoList != null)
+            {
+                //log = "Undo Changes clicked";
+                //LoadingExtension.WriteLog(log);
+                ApplyUndo();
+            }
         }
 
+        /// <summary>
+        /// set up any check boxes
+        /// </summary>
+        /// <param name="checkbox"></param>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
         private void SetCheckBox(UICheckBox checkbox, int x, int y)
         {
             checkbox.isChecked = true;
@@ -553,6 +704,16 @@ namespace AnotherTerrain.Services
             checkbox.enabled = true;
         }
 
+        /// <summary>
+        /// set up any dropdowns
+        /// </summary>
+        /// <param name="checkBox"></param>
+        /// <param name="values"></param>
+        /// <param name="top"></param>
+        /// <param name="left"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        /// <param name="tooltip"></param>
         private void SetCheckBoxDropDown(UICheckboxDropDown checkBox, string[] values, int top, int left, int width, int height, string tooltip)
         {
             checkBox.items = values;
@@ -563,17 +724,35 @@ namespace AnotherTerrain.Services
             checkBox.enabled = true;
         }
 
-        private void SetLabel(UILabel label, string p, int x, int y)
+        /// <summary>
+        /// set up the lables
+        /// </summary>
+        /// <param name="label"></param>
+        /// <param name="pl"></param>
+        /// <param name="top"></param>
+        /// <param name="left"></param>
+        /// <param name="width"></param>
+        /// <param name="height"></param>
+        private void SetLabel(UILabel label, string pl, int top, int left, int width, int height)
         {
-            label.relativePosition = new Vector3(x, y);
-            label.text = p;
+            log = "undoButton text, top, left, width, height, tooltip: " + pl + ", " + top + ", " + left + ", " + width + ", " + height;
+            //LoadingExtension.WriteLog(log);
+            label.relativePosition = new Vector3(top, left);
+            label.size = new Vector3(width, height); //120, 20);
+            label.text = pl;
             label.textScale = 0.8f;
-            label.size = new Vector3(120, 20);
         }
 
-        private int ReturnInteger(string value, double min, double max)
+        /// <summary>
+        /// return the value of the string between the values
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <returns></returns>
+        private int ReturnInteger(string value, int min, int max)
         {
-            int tmp = Convert.ToInt32(min);
+            int tmp = min;
             try
             {
                 tmp = Convert.ToInt32(value);
@@ -582,10 +761,17 @@ namespace AnotherTerrain.Services
             {
                 tmp = 0;
             }
-            return tmp;
+            return Math.Min(Math.Max(tmp, min), max);
         }
 
-        private double ReturnDouble(string value, int min, int max)
+        /// <summary>
+        /// return the value of the string between the values
+        /// </summary>
+        /// <param name="value"></param>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <returns></returns>
+        private double ReturnDouble(string value, double min, double max)
         {
             double tmp = min;
             try
@@ -596,9 +782,14 @@ namespace AnotherTerrain.Services
             {
                 tmp = 0;
             }
-            return tmp;
+            return Math.Min(Math.Max(tmp, min), max);
         }
 
+        /// <summary>
+        /// is this a number
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns></returns>
         private bool isNumeric(string value)
         {
             bool results = false;
@@ -610,7 +801,6 @@ namespace AnotherTerrain.Services
             catch (FormatException e)
             {
                 Debug.Log(e.Message);
-                throw;
             }
             return results;
         }

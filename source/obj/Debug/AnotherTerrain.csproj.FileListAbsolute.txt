@@ -11,4 +11,3 @@ C:\Users\Rick Deschenes\Source\Repos\AnotherTerrianTool\source\bin\Debug\ICSharp
 C:\Users\Rick Deschenes\Source\Repos\AnotherTerrianTool\source\bin\Debug\UnityEngine.xml
 C:\Users\Rick Deschenes\Source\Repos\AnotherTerrianTool\source\obj\Debug\AnotherTerrain.dll
 C:\Users\Rick Deschenes\Source\Repos\AnotherTerrianTool\source\obj\Debug\AnotherTerrain.pdb
-C:\Users\Rick Deschenes\Source\Repos\AnotherTerrianTool\source\obj\Debug\AnotherTerrain.csprojResolveAssemblyReference.cache

@@ -60,9 +60,9 @@ namespace AnotherTerrain
             var tex = new Texture2D(spriteWidth * spriteNames.Length, spriteHeight, TextureFormat.ARGB32, false);
             tex.filterMode = FilterMode.Bilinear;
 
-            WriteLog("About to load loadTextureFromAssembly.");
+            //WriteLog("About to load TextureFromAssembly.");
             tex = loadTextureFromAssembly(textureFile, false);
-            WriteLog("Loaded loadTextureFromAssembly.");
+            //WriteLog("Loaded TextureFromAssembly.");
 
             UITextureAtlas atlas = ScriptableObject.CreateInstance<UITextureAtlas>();
 
@@ -93,19 +93,19 @@ namespace AnotherTerrain
 
         static Texture2D loadTextureFromAssembly(string textureFile, bool readOnly = true)
         {
-            WriteLog("entering loadTextureFromAssembly.");
+            //WriteLog("entering loadTextureFromAssembly.");
             //Bitmap img = Properties.Resources.spritesheet;
             //byte[] buf = ImageToByte(img);
             //WriteLog("Converted to byte Array");
 
             System.Reflection.Assembly assembly = System.Reflection.Assembly.GetExecutingAssembly();
-            WriteLog("loaded Assembly." + assembly.GetName().Name);
+            //WriteLog("loaded Assembly." + assembly.GetName().Name);
             System.IO.Stream textureStream = assembly.GetManifestResourceStream(assembly.GetName().Name + "." + textureFile);
 
             var buf = new byte[textureStream.Length];  //declare arraysize
             textureStream.Read(buf, 0, buf.Length); // read from stream to byte array
 
-            WriteLog("loaded Image.");
+            //WriteLog("loaded Image.");
             var tex = new Texture2D(2, 2, TextureFormat.ARGB32, false);
             tex.LoadImage(buf);
             tex.Apply(false, readOnly);
